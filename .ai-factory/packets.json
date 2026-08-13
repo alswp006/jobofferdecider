@@ -1,0 +1,583 @@
+[
+  {
+    "id": "0001",
+    "title": "엔티티 & RouteState 타입 정의",
+    "epic": "Epic 1. 타입 정의",
+    "task": {
+      "description": "SPEC Data Models 전체(OfferKind, Offer, Weights, AxisScore, MoneyBreakdown, Verdict, ScoreResult, UnlockState, AppMeta)와 페이지 간 네비게이션 계약 RouteState, SaveResult, STORAGE_KEYS, AXIS_ORDER, AXIS_LABELS, VERDICT_LABELS, DEFAULT_WEIGHTS 상수를 src/lib/types.ts에 정의한다. 런타임 로직은 넣지 않고 타입과 순수 상수만 export 한다.",
+      "acceptance_criteria": [
+        "SPEC의 9개 인터페이스/타입이 필드명·타입 그대로 export 된다",
+        "AXIS_ORDER가 ['money','remote','commute','growth','culture','stability'] as const 로 정의된다",
+        "RouteState가 '/compare': { targetOfferId: string } | undefined 를 포함한 5개 라우트 키를 갖는다",
+        "VERDICT_LABELS 5개, AXIS_LABELS 6개, DEFAULT_WEIGHTS 6축 값이 모두 5",
+        "HEX 색상 리터럴 0개, npx tsc --noEmit 통과"
+      ]
+    },
+    "covers": [
+      "F1-AC-2"
+    ],
+    "files": [
+      "src/lib/types.ts"
+    ],
+    "definition_of_done": [
+      "npx tsc --noEmit 통과",
+      "SaveResult = { ok: true } | { ok: false; error: string } export",
+      "STORAGE_KEYS 4개 키가 jod.*.v1 형식"
+    ],
+    "depends_on": [],
+    "db_schema": "interface Offer{id;kind;companyName;baseSalaryManwon;bonusManwon;welfarePointManwon;remoteDaysPerWeek;commuteMinutesOneWay;commuteCostPerDayWon;lunchCostPerDayWon;growthScore;cultureScore;stabilityScore;createdAt;updatedAt} → keys: jod.offers.v1 / jod.weights.v1 / jod.unlock.v1 / jod.meta.v1",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0002",
+    "title": "localStorage CRUD 헬퍼",
+    "epic": "Epic 2. 데이터 레이어",
+    "task": {
+      "description": "4개 localStorage 키의 안전한 읽기/쓰기를 src/lib/storage.ts에 구현한다. 읽기는 try/catch로 파싱 실패 시 기본값 반환(throw·console.error 금지), 쓰기는 QuotaExceededError를 잡아 SaveResult로 반환한다. id는 모듈 스코프 counter를 쓰는 o_${Date.now()}_${counter} 방식으로 생성해 구형 WebView 호환성을 확보한다.",
+      "acceptance_criteria": [
+        "loadOffers()가 키 없음/\"{not-json\" 저장 시 [] 반환, throw 0건",
+        "saveOffer()가 kind==='current' 시 기존 id·createdAt 유지하고 배열 내 current 1건 유지",
+        "offer 3건 존재 시 4번째 저장은 { ok:false, error:'제안 직장은 최대 3개까지 비교할 수 있어요' } 반환",
+        "setItem이 QuotaExceededError를 던지면 { ok:false, error:'저장 공간이 부족합니다. 오퍼를 삭제 후 다시 시도해주세요.' } 반환하고 예외 전파 없음",
+        "saveWeights()가 6축 합 0이면 { ok:false, error:'중요도를 최소 1개 이상 1점 이상으로 설정해주세요' } 반환"
+      ]
+    },
+    "covers": [
+      "F1-AC-5",
+      "F1-AC-6",
+      "F1-AC-8"
+    ],
+    "files": [
+      "src/lib/storage.ts"
+    ],
+    "definition_of_done": [
+      "deleteOffer/getOfferById/getCurrentOffer/loadWeights/loadUnlock/addUnlockKey/loadMeta/setCalcNoticeAcknowledged 제공",
+      "newOfferId()가 crypto.randomUUID 미사용, 연속 2회 호출 결과 상이",
+      "console.error 0건, npx tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "Offer[] → 'jod.offers.v1', Weights → 'jod.weights.v1', UnlockState → 'jod.unlock.v1', AppMeta → 'jod.meta.v1'",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0003",
+    "title": "입력 검증 + 월 실수령 계산",
+    "epic": "Epic 2. 데이터 레이어",
+    "task": {
+      "description": "src/lib/calc.ts에 validateOffer(필드별 한국어 에러), getEffectiveTaxRate(구간표), calcMonthlyNet(연간 총액→세후→복지포인트 가산→통근·점심 차감→12개월 분할)을 결정론적 순수 함수로 구현한다. 이 태스크만 calc.ts를 생성·수정하며 다른 패킷은 import만 한다.",
+      "acceptance_criteria": [
+        "calcMonthlyNet({base:6000,bonus:600,welfare:120,remote:2,commute:3000,lunch:9000}) === 4538000, 10회 호출 결과 동일",
+        "중간값이 annualGross=66,000,000 / rate=0.18 / annualNet=54,120,000 / officeDays=138 / commute=414,000 / lunch=1,242,000",
+        "getEffectiveTaxRate 경계: 29999999→0.10, 30000000→0.14, 50000000→0.18, 70000000→0.23, 100000000→0.28",
+        "validateOffer가 { field: keyof Offer; message: string }[] 을 반환하고 회사명·연봉·통근·성장성 4개 에러 문구를 모두 포함",
+        "Number.isInteger가 false인 값도 거부"
+      ]
+    },
+    "covers": [
+      "F1-AC-1",
+      "F1-AC-7"
+    ],
+    "files": [
+      "src/lib/calc.ts"
+    ],
+    "definition_of_done": [
+      "순수 함수만 존재(부수효과·localStorage 접근 0)",
+      "console.error 0건, HEX 0건",
+      "npx tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0004",
+    "title": "정규화·총점·판정·협상 포인트",
+    "epic": "Epic 2. 데이터 레이어",
+    "task": {
+      "description": "src/lib/score.ts에 buildScoreResult(current, target, weights): ScoreResult를 구현한다. 축별 raw 추출 → 상대 정규화(40~100, 동률 50, commute 역방향) → 가중 총점(소수 1자리) → gap 기반 verdict → 협상 포인트 정확히 3개. 협상 문구 템플릿은 src/lib/negotiation.ts로 분리하며 calc.ts는 import만 하고 수정하지 않는다.",
+      "acceptance_criteria": [
+        "remote raw 0 vs 3 → normCurrent 40, normTarget 100; commute 30 vs 30 → 둘 다 50",
+        "axes.length===6이고 axes.map(a=>a.axis)가 AXIS_ORDER와 순서까지 일치",
+        "verdict 경계: gap 15.0→strong_move, 14.9→lean_move, 4.9→neutral, -5.0→lean_stay, -15.0→strong_stay",
+        "열세 축 0개일 때 negotiationPoints.length===3이고 [0]==='사이닝 보너스를 요청하세요. 통상 연봉의 10~20%가 협상 범위입니다.', 중복 문자열 0",
+        "sumWeight===0이면 DEFAULT_WEIGHTS로 계산하고 JSON.stringify(result).includes('NaN')===false"
+      ]
+    },
+    "covers": [
+      "F1-AC-3",
+      "F1-AC-4"
+    ],
+    "files": [
+      "src/lib/score.ts",
+      "src/lib/negotiation.ts"
+    ],
+    "definition_of_done": [
+      "money 브레이크다운 6개 필드가 모두 Number.isInteger true",
+      "열세 축은 weight 내림차순, 동률 시 AXIS_ORDER 순으로 상위 3개 선택",
+      "src/lib/calc.ts 미변경, npx tsc --noEmit 통과"
+    ],
+    "depends_on": [
+      "0003"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0005",
+    "title": "앱 상태 훅 4종",
+    "epic": "Epic 2. 데이터 레이어",
+    "task": {
+      "description": "storage 위에 얹는 경량 상태 훅 useOffers/useWeights/useUnlock/useAppMeta를 만든다. UI는 localStorage를 직접 호출하지 않고 이 훅만 사용한다. 저장 실패는 SaveResult를 그대로 반환해 화면이 Toast를 띄우게 하고, 로드 실패 시 loadError 플래그와 기본값을 노출한다.",
+      "acceptance_criteria": [
+        "useOffers()가 { isLoading, offers, current, save, remove, refresh, loadError } 반환, 초기 렌더에서 isLoading:true를 1틱 이상 노출",
+        "useOffers().save()가 storage의 SaveResult를 그대로 반환하고 throw 0건",
+        "useWeights()가 저장값 합 0이면 DEFAULT_WEIGHTS + wasReset:true, 그 외 wasReset:false",
+        "useUnlock().isUnlocked(currentId,targetId)가 `${currentId}:${targetId}` 키 존재 여부를 boolean 반환, unlock() 제공",
+        "useAppMeta()가 { isLoading, calcNoticeAcknowledged, acknowledgeCalcNotice } 제공"
+      ]
+    },
+    "covers": [
+      "F2-AC-7",
+      "F4-AC-6",
+      "F6-AC-6"
+    ],
+    "files": [
+      "src/hooks/useOffers.ts",
+      "src/hooks/useWeights.ts",
+      "src/hooks/useUnlock.ts",
+      "src/hooks/useAppMeta.ts"
+    ],
+    "definition_of_done": [
+      "모든 훅에서 console.error 0건, throw 0건",
+      "npx tsc --noEmit 및 npm run build 통과"
+    ],
+    "depends_on": [
+      "0002"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0006",
+    "title": "홈 화면 (`/`)",
+    "epic": "Epic 3. UI 페이지",
+    "task": {
+      "description": "ScreenScaffold + Top 기반 홈을 구성한다. 스켈레톤 → (빈 상태 | SummaryHero + 오퍼 ListRow 목록) 분기, 최초 진입 시 계산 방식 고지 AlertDialog 1회 표시, 저장소 읽기 실패 시 에러 + 다시 시도 버튼, 카드 탭 시 /compare로 RouteState 타입에 맞춘 state 전달을 처리한다.",
+      "acceptance_criteria": [
+        "isLoading일 때 data-testid='home-skeleton' 스켈레톤 3줄만 렌더되고 empty-state는 렌더되지 않음",
+        "offers가 비면 data-testid='empty-state'에 Asset.ContentIcon + '현재 직장을 먼저 등록해요' + CTA Button(display='block', 높이 48px)",
+        "current 1 + offer 2건이면 data-testid='offer-card'가 정확히 2개, 각 카드에 회사명과 '월 실수령 4,538,000원' 형식(천단위 콤마) 표시, 최소 높이 64px",
+        "카드 탭 시 navigate('/compare', { state: { targetOfferId } satisfies NonNullable<RouteState['/compare']> }) 호출",
+        "calcNoticeAcknowledged===false면 AlertDialog가 1회 표시되고 '확인' 탭 시 jod.meta.v1.calcNoticeAcknowledged=true 저장 → 재진입 시 미표시"
+      ]
+    },
+    "covers": [
+      "F2-AC-1",
+      "F2-AC-2",
+      "F2-AC-3",
+      "F2-AC-4",
+      "F2-AC-5"
+    ],
+    "files": [
+      "src/pages/Home.tsx"
+    ],
+    "definition_of_done": [
+      "HEX 0개(var(--tds-color-*)만), Tailwind 여백 클래스 0개, 간격은 TDS Spacing(size)만 사용",
+      "저장소 읽기 실패 시 '정보를 불러오지 못했어요. 다시 시도해주세요.' + weak Button 렌더",
+      "ListRow 탭 시 generateHapticFeedback({ type: 'tickWeak' }) 호출"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: StatusPanel. Whitelist: ScreenScaffold, Top, SummaryHero, Amount, Spacing, Paragraph, ListRow, Chip, Button, EmptyState, AdSlot, FloatingTabBar, AlertDialog, Toast.\nLayout:\n<ScreenScaffold tabBar={<FloatingTabBar active=\"home\" />}>\n  <Top title={<Top.TitleParagraph>이직 결정</Top.TitleParagraph>} right={<Button variant=\"weak\" size=\"small\">가중치</Button>} />\n  <SummaryHero label=\"현재 직장 월 실수령\" value={<Amount value={4538000} unit=\"원\" typography=\"t1\" />} caption=\"복지포인트·통근·점심값 반영 추정치\" />\n  <Spacing size={12} />\n  <Paragraph.Text typography=\"st13\" color=\"tertiary\">규칙 기반 계산 결과입니다</Paragraph.Text>\n  <Spacing size={24} />\n  <Paragraph.Text typography=\"t4\">비교할 오퍼</Paragraph.Text>\n  <Spacing size={12} />\n  {offers.map(o => (<ListRow key={o.id} onClick={() => nav('/compare', { state: { targetOfferId: o.id } })} contents={<ListRow.Texts type=\"2RowTypeA\" top={o.companyName} bottom={`연봉 ${o.baseSalaryManwon}만원 · 재택 주 ${o.remoteDaysPerWeek}일`} />} right={<Chip label={unlocked(o.id) ? '결과 보기' : '광고 후 공개'} variant=\"outlined\" />} />))}\n  <Spacing size={24} />\n</ScreenScaffold>\nStates: Loading = SummaryHero 자리 고정 높이 skeleton + ListRow 3개 placeholder / Empty(현재 직장 미등록) = EmptyState title '현재 직장을 먼저 등록해요', description '연봉·통근·재택 정보를 넣으면 비교를 시작할 수 있어요', action Button(weak) '현재 직장 등록하기' / Empty(오퍼 0건) = 히어로 유지 + EmptyState '아직 받은 오퍼가 없어요' / Error = '정보를 불러오지 못했어요. 다시 시도해주세요.' + weak Button.\nInteractions: 최초 진입 & calcNoticeAcknowledged===false → AlertDialog '계산 방식 안내'(세율은 구간 근사 추정치예요, 왼쪽 버튼 라벨 '닫기'), 확인 시 플래그 저장 / ListRow 탭 → tickWeak / 저장 실패 → Toast(position='bottom') '저장 공간이 부족해요. 오퍼를 삭제 후 다시 시도해주세요.'"
+  },
+  {
+    "id": "0007",
+    "title": "오퍼 목록 화면 (`/offers`)",
+    "epic": "Epic 3. UI 페이지",
+    "task": {
+      "description": "TDS Tab으로 '현재 직장' / '받은 오퍼 n/3'을 전환하는 목록 화면을 만든다. 각 행은 ListRow + 수정 Chip이며 탭 시 편집 화면으로 이동한다. 하단 1차 CTA는 탭에 따라 라벨이 바뀌고 오퍼 3건이면 비활성화되며 안내 문구를 노출한다.",
+      "acceptance_criteria": [
+        "Tab 전환 시 idx 0은 current 1건, idx 1은 offer 목록만 렌더",
+        "offer 3건이면 하단 Button disabled=true이고 '오퍼는 최대 3개까지 담을 수 있어요' 문구 표시",
+        "행 탭 시 navigate('/offer/' + id + '/edit') 호출",
+        "목록이 비면 EmptyState 렌더(action 생략, 하단 CTA와 라벨 중복 없음)",
+        "로드 실패 시 '목록을 불러오지 못했어요. 다시 시도해주세요.' + 다시 시도 Button(weak)"
+      ]
+    },
+    "covers": [
+      "F2-AC-6",
+      "F3-AC-6"
+    ],
+    "files": [
+      "src/pages/Offers.tsx"
+    ],
+    "definition_of_done": [
+      "HEX 0개, Tailwind 여백 클래스 0개, 간격은 Spacing만 사용",
+      "탭 전환/추가 버튼에 generateHapticFeedback({ type: 'tickWeak' })",
+      "npx tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: PageShell. Whitelist: ScreenScaffold, Top, Tab, Spacing, Paragraph, ListRow, Chip, Button, EmptyState, AlertDialog, Toast, FloatingTabBar.\nLayout:\n<ScreenScaffold tabBar={<FloatingTabBar active=\"offers\" />}>\n  <Top title={<Top.TitleParagraph>내 직장·오퍼</Top.TitleParagraph>} />\n  <Tab onChange={setIdx}><Tab.Item selected={idx===0}>현재 직장</Tab.Item><Tab.Item selected={idx===1}>받은 오퍼 {offerCount}/3</Tab.Item></Tab>\n  <Spacing size={16} />\n  {list.map(o => (<ListRow key={o.id} onClick={() => nav(`/offer/${o.id}/edit`)} contents={<ListRow.Texts type=\"2RowTypeA\" top={o.companyName} bottom={`연봉 ${o.baseSalaryManwon}만원 · 통근 편도 ${o.commuteMinutesOneWay}분`} />} right={<Chip label=\"수정\" variant=\"outlined\" />} />))}\n  <Spacing size={24} />\n  <Button variant=\"fill\" size=\"large\" display=\"block\" disabled={idx===1 && offerCount>=3}>{idx===0 ? '현재 직장 등록하기' : '오퍼 추가하기'}</Button>\n  <Spacing size={32} />\n</ScreenScaffold>\nStates: Loading = ListRow 2개 skeleton / Empty = EmptyState title '등록한 오퍼가 없어요' description '오퍼를 추가하면 현재 직장과 바로 비교할 수 있어요' (action 생략) / Error = Paragraph.Text '목록을 불러오지 못했어요. 다시 시도해주세요.' + 다시 시도 Button(weak).\nInteractions: 3건 초과 시 CTA 비활성 + tertiary 캡션 안내 / 삭제는 편집 화면에서만 / 탭 전환·추가 버튼 tickWeak."
+  },
+  {
+    "id": "0008",
+    "title": "직장·오퍼 입력 폼 화면 (`/offer/new`, `/offer/:id/edit`)",
+    "epic": "Epic 3. UI 페이지",
+    "task": {
+      "description": "금액·시간 숫자 필드(연봉·상여·복지포인트·재택일·통근분·교통비·점심값)와 회사명 TextField를 조립한 입력 화면을 만든다. validateOffer 결과를 필드별 hasError/help로 표시하고 SubmitFooter 저장 버튼으로 useOffers().save()를 호출한다. state 없이 /offer/new 직접 진입해도 크래시 없이 kind 기본값 'offer'로 렌더한다.",
+      "acceptance_criteria": [
+        "location.state 없이 /offer/new 직접 진입 시 크래시 없이 kind='offer' 기본값으로 폼 렌더",
+        "회사명 빈 값 또는 21자 입력 시 해당 TextField hasError=true + '1~20자로 입력할 수 있어요' 표시, 저장 Button disabled",
+        "저장 성공 시 navigate('/offers') 이동, 실패 시 SaveResult.error 문구를 Toast로 표시",
+        "편집 모드(/offer/:id/edit)에서 기존 값이 각 필드에 프리필되고 Top right에 삭제 Button(color='danger') 노출, 삭제 시 AlertDialog(왼쪽 버튼 '닫기') 확인 후 remove 호출",
+        "숫자 필드는 inputMode='numeric'이며 정수 외 입력은 저장 시 거부"
+      ]
+    },
+    "covers": [
+      "F3-AC-1",
+      "F3-AC-2",
+      "F3-AC-3",
+      "F3-AC-4"
+    ],
+    "files": [
+      "src/pages/OfferForm.tsx"
+    ],
+    "definition_of_done": [
+      "SubmitFooter가 포커스된 입력을 가리지 않음(하단 고정 요소 paddingBottom: calc(16px + env(safe-area-inset-bottom)))",
+      "HEX 0개, Tailwind 여백 클래스 0개, TDS Spacing만 사용",
+      "저장 CTA에 generateHapticFeedback({ type: 'success' })"
+    ],
+    "depends_on": [],
+    "db_schema": "Offer (jod.offers.v1) — 저장은 useOffers().save() 경유",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: FixedBottomCTA. Whitelist: ScreenScaffold, Top, TextField, Spacing, Paragraph, Chip, Border, SubmitFooter, Button, AlertDialog, Toast.\nLayout:\n<ScreenScaffold footer={<SubmitFooter><Button variant=\"fill\" size=\"large\" display=\"block\" disabled={!valid}>저장하기</Button></SubmitFooter>}>\n  <Top title={<Top.TitleParagraph>{isCurrent ? '현재 직장' : '받은 오퍼'}</Top.TitleParagraph>} right={isEdit ? <Button variant=\"weak\" size=\"small\" color=\"danger\">삭제</Button> : undefined} />\n  <TextField variant=\"box\" label=\"회사 이름\" value={name} onChange={...} help=\"1~20자로 입력할 수 있어요\" hasError={nameErr} />\n  <Spacing size={16} />\n  <TextField variant=\"box\" label=\"연봉(만원)\" inputMode=\"numeric\" ... />\n  <Spacing size={16} /> 상여(만원) / 복지포인트(만원) / 재택 주 n일 / 통근 편도(분) / 1일 교통비(원) / 1일 점심값(원) 순으로 동일 패턴 반복, 각 사이 <Spacing size={16} />\n  <Spacing size={32} />\n</ScreenScaffold>\nStates: Loading(편집 모드 로드 중) = 필드 자리 skeleton / Error = Toast로 에러 문구 / Invalid = 해당 TextField hasError + help에 한국어 에러 문구, 하단 CTA disabled.\nInteractions: 저장 성공 → success 햅틱 + /offers 이동 / 삭제 → AlertDialog(왼쪽 '닫기', 오른쪽 '삭제') / 저장 실패 → Toast bottom."
+  },
+  {
+    "id": "0009",
+    "title": "점수 선택 컴포넌트 (성장성·조직문화·안정성)",
+    "epic": "Epic 3. UI 페이지",
+    "task": {
+      "description": "1~5점 자기평가를 고르는 재사용 컴포넌트 ScoreSelector를 만든다. TDS Chip 5개를 가로 flex로 배치하고 선택된 항목만 활성 스타일을 갖는다. 입력 폼에서 growthScore/cultureScore/stabilityScore 3곳에 재사용되며 값 변경 시 tickWeak 햅틱을 발생시킨다.",
+      "acceptance_criteria": [
+        "Props가 { label: string; value: number; onChange: (v: number) => void } 이며 1~5 Chip 5개를 렌더",
+        "선택된 Chip만 활성 variant, 나머지는 outlined",
+        "각 Chip의 터치 타깃이 최소 44x44px",
+        "Chip 탭 시 onChange(n) 호출 + generateHapticFeedback({ type: 'tickWeak' })",
+        "HEX 0개, 간격은 TDS Spacing(size)만 사용"
+      ]
+    },
+    "covers": [
+      "F3-AC-5"
+    ],
+    "files": [
+      "src/components/ScoreSelector.tsx"
+    ],
+    "definition_of_done": [
+      "커스텀 CSS는 flex 배치에만 사용",
+      "npx tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Whitelist: Paragraph, Chip, Spacing. 레이아웃: <Paragraph.Text typography=\"t5\">{label}</Paragraph.Text><Spacing size={8} /><div style={{display:'flex',gap:8}}>{[1,2,3,4,5].map(n => <Chip key={n} label={`${n}점`} variant={value===n?'fill':'outlined'} onClick={()=>onChange(n)} />)}</div>. 색상은 var(--tds-color-*)/TDS 기본값만. 터치 타깃 44px 이상."
+  },
+  {
+    "id": "0010",
+    "title": "가중치 설정 화면 (`/weights`)",
+    "epic": "Epic 3. UI 페이지",
+    "task": {
+      "description": "6축(실수령·재택·통근·성장성·조직문화·안정성) 중요도를 0~10 정수로 조절하는 화면을 만든다. 각 축은 ListRow + 값 조절 UI로 구성하고, 합계가 0이면 저장을 막고 안내 문구를 노출한다. 저장은 useWeights를 통해 수행하고 결과 Toast를 띄운다.",
+      "acceptance_criteria": [
+        "6개 축 행이 AXIS_ORDER 순서로 렌더되고 각 행에 AXIS_LABELS 라벨과 현재 값(0~10)이 표시",
+        "값 조절 시 0 미만/10 초과로 내려가거나 올라가지 않음(정수만)",
+        "6축 합이 0이면 저장 Button disabled + '중요도를 최소 1개 이상 1점 이상으로 설정해주세요' 캡션 표시",
+        "저장 성공 시 Toast '중요도를 저장했어요' 표시 후 navigate('/')",
+        "기존 저장값이 손상되어 wasReset=true면 기본값 5로 렌더되고 안내 캡션 노출"
+      ]
+    },
+    "covers": [
+      "F4-AC-1",
+      "F4-AC-2",
+      "F4-AC-3",
+      "F4-AC-4",
+      "F4-AC-5"
+    ],
+    "files": [
+      "src/pages/Weights.tsx"
+    ],
+    "definition_of_done": [
+      "HEX 0개, Tailwind 여백 클래스 0개, TDS Spacing만 사용",
+      "조절 버튼 터치 타깃 44px 이상, 저장 CTA는 SubmitFooter 또는 display='block'",
+      "npx tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "Weights (jod.weights.v1) — useWeights 경유",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: FixedBottomCTA. Whitelist: ScreenScaffold, Top, ListRow, Chip, Button, Paragraph, Spacing, SubmitFooter, Toast, FloatingTabBar.\nLayout: <ScreenScaffold tabBar={<FloatingTabBar active=\"weights\" />} footer={<SubmitFooter><Button variant=\"fill\" size=\"large\" display=\"block\" disabled={sum===0}>저장하기</Button></SubmitFooter>}>\n <Top title={<Top.TitleParagraph>무엇이 더 중요한가요?</Top.TitleParagraph>} />\n <Paragraph.Text typography=\"st13\" color=\"tertiary\">중요도는 0~10점으로 조절할 수 있어요</Paragraph.Text>\n <Spacing size={16} />\n {AXIS_ORDER.map(axis => <ListRow key={axis} contents={<ListRow.Texts type=\"1RowTypeA\" top={AXIS_LABELS[axis]} />} right={<div style={{display:'flex',gap:8,alignItems:'center'}}><Chip label=\"-\" variant=\"outlined\" /><Paragraph.Text typography=\"t5\">{w[axis]}</Paragraph.Text><Chip label=\"+\" variant=\"outlined\" /></div>} />)}\n <Spacing size={24} /></ScreenScaffold>\nStates: Loading = ListRow 6개 skeleton / Error(로드 실패) = 기본값 렌더 + '이전 설정을 불러오지 못해 기본값으로 시작해요' 캡션.\nInteractions: +/- 탭 → tickWeak / 저장 → success 햅틱 + Toast '중요도를 저장했어요' + 홈 이동."
+  },
+  {
+    "id": "0011",
+    "title": "비교 화면 — state 가드 + 요약 + 리워드 게이트 (`/compare`)",
+    "epic": "Epic 3. UI 페이지",
+    "task": {
+      "description": "/compare 화면의 골격을 만든다. location.state가 없거나 targetOfferId가 유효하지 않으면 크래시 없이 안내 + 홈 이동 버튼을 렌더한다. 현재 직장·대상 오퍼·가중치로 buildScoreResult를 계산해 요약(판정 라벨, gap)을 보여주고, 미해제 비교는 TossRewardAd로 상세를 게이트한다. 광고 실패 시 영구 잠금되지 않도록 재시도 경로를 제공한다.",
+      "acceptance_criteria": [
+        "location.state 없이 /compare 직접 진입/새로고침 시 크래시 없이 data-testid='compare-guard'와 '홈으로 가기' Button 렌더",
+        "현재 직장 미등록이면 '현재 직장부터 등록해주세요' 안내 + 등록 이동 Button 렌더",
+        "해제되지 않은 비교는 상세가 감춰지고 '광고 보고 결과 보기' CTA + <TossRewardAd slotId={import.meta.env.VITE_TOSS_AD_SLOT_ID}>로 게이트",
+        "광고 시청 완료 시 unlock(currentId,targetId) 호출 → 재진입 시 게이트 없이 상세 표시",
+        "광고 로드/시청 실패 시 Toast '광고를 불러오지 못했어요. 잠시 후 다시 시도해주세요.' + 다시 시도 Button 노출(영구 잠금 없음)"
+      ]
+    },
+    "covers": [
+      "F5-AC-1",
+      "F5-AC-2",
+      "F5-AC-3",
+      "F5-AC-4",
+      "F5-AC-8"
+    ],
+    "files": [
+      "src/pages/Compare.tsx"
+    ],
+    "definition_of_done": [
+      "VERDICT_LABELS 기반 판정 문구와 gap(소수 1자리) 표시",
+      "HEX 0개, Tailwind 여백 클래스 0개, TDS Spacing만 사용",
+      "npx tsc --noEmit 및 npm run build 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "UnlockState (jod.unlock.v1) — 키 형식 `${currentOfferId}:${targetOfferId}`",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: StatusPanel + RewardGate. Whitelist: ScreenScaffold, Top, SummaryHero, Amount, Paragraph, Spacing, Button, Chip, TossRewardAd, AdSlot, Toast, EmptyState.\nLayout: <ScreenScaffold>\n <Top title={<Top.TitleParagraph>비교 결과</Top.TitleParagraph>} />\n <SummaryHero label={VERDICT_LABELS[result.verdict]} value={<Amount value={result.money.diffMonthlyWon} unit=\"원\" typography=\"t1\" />} caption=\"월 실수령 차액 (제안 - 현재)\" />\n <Spacing size={12} />\n <Paragraph.Text typography=\"st13\" color=\"tertiary\">규칙 기반 계산 결과입니다</Paragraph.Text>\n <Spacing size={24} />\n {isUnlocked ? <CompareDetail result={result} /> : <TossRewardAd slotId={import.meta.env.VITE_TOSS_AD_SLOT_ID}><Button variant=\"fill\" size=\"large\" display=\"block\">광고 보고 결과 보기</Button></TossRewardAd>}\n <Spacing size={24} />\n <AdSlot adGroupId={import.meta.env.VITE_TOSS_AD_GROUP_ID} />\n</ScreenScaffold>\nStates: Guard(state 없음) = EmptyState '어떤 오퍼를 비교할지 선택해주세요' + Button '홈으로 가기' (data-testid='compare-guard') / Empty(현재 직장 없음) = EmptyState + '현재 직장 등록하기' / Loading = 히어로 skeleton / Error(광고 실패) = Toast + 다시 시도 Button.\nInteractions: 게이트 CTA 탭 → success 햅틱, 시청 완료 → unlock 저장 후 상세 즉시 렌더."
+  },
+  {
+    "id": "0012",
+    "title": "비교 결과 상세 카드 + 계산 고지",
+    "epic": "Epic 3. UI 페이지",
+    "task": {
+      "description": "해제된 비교에서 노출되는 상세 컴포넌트 CompareDetail을 만든다. 6축 점수 막대(현재 vs 제안), 총점·gap, 실수령 브레이크다운(세전/공제/복지/통근·점심), 협상 포인트 3개 리스트, '규칙 기반 계산 결과입니다' 고지를 렌더한다. Compare.tsx는 이 컴포넌트를 import만 하므로 파일 충돌이 없다.",
+      "acceptance_criteria": [
+        "6개 축 행이 AXIS_ORDER 순서로 렌더되고 각 행에 라벨·현재/제안 정규화 점수가 표시",
+        "협상 포인트가 정확히 3개 ListRow로 렌더되고 문구가 negotiationPoints 배열과 동일",
+        "실수령 브레이크다운에 currentMonthlyNetWon/targetMonthlyNetWon/diffMonthlyWon/diffYearlyWon이 천단위 콤마로 표시",
+        "하단에 '규칙 기반 계산 결과입니다. 세율은 구간 근사 추정치이며 법률·세무 자문이 아닙니다' 고지 문구 표시",
+        "HEX 0개, Tailwind 여백 클래스 0개, 커스텀 CSS는 막대 flex 레이아웃에만 사용"
+      ]
+    },
+    "covers": [
+      "F5-AC-5",
+      "F5-AC-6",
+      "F5-AC-7"
+    ],
+    "files": [
+      "src/components/CompareDetail.tsx"
+    ],
+    "definition_of_done": [
+      "막대 색상은 var(--tds-color-*)만 사용(다크모드 대응)",
+      "npx tsc --noEmit 통과"
+    ],
+    "depends_on": [
+      "0011"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Whitelist: Paragraph, ListRow, Spacing, Border, Chip, Amount.\nLayout: 섹션1 '항목별 점수' — Paragraph.Text typography=\"t4\" + Spacing size={12} + 6축 행(각 행: 라벨, 현재/제안 막대 2개 div(flex, 폭 = norm%), 점수 텍스트) / <Border /> / 섹션2 '실수령 상세' — ListRow.Texts 2RowTypeA 로 세전 연봉·공제 추정·복지포인트·통근+점심 차감·월 실수령 표시 / <Border /> / 섹션3 '협상 포인트 3가지' — negotiationPoints.map((p,i) => <ListRow key={i} contents={<ListRow.Texts type=\"2RowTypeA\" top={`포인트 ${i+1}`} bottom={p} />} />) / Spacing size={16} / <Paragraph.Text typography=\"st13\" color=\"tertiary\">규칙 기반 계산 결과입니다. 세율은 구간 근사 추정치이며 법률·세무 자문이 아닙니다</Paragraph.Text>."
+  },
+  {
+    "id": "0013",
+    "title": "결과 이미지 저장 유틸 + 저장 버튼",
+    "epic": "Epic 3. UI 페이지",
+    "task": {
+      "description": "비교 결과를 캔버스로 그려 PNG로 내려받는 유틸과 이를 호출하는 버튼 컴포넌트를 만든다. 외부 URL 이동 없이 Blob + a[download]로 처리하고, 캔버스 렌더 실패 시 무반응이 아니라 Toast로 실패를 알린다. 이미지는 localStorage에 저장하지 않는다.",
+      "acceptance_criteria": [
+        "saveResultImage(result, companyNames)가 canvas 2d로 판정 라벨·총점·월 차액·6축 점수를 그려 PNG Blob을 생성",
+        "저장 버튼 탭 시 파일명 `이직결정_{targetCompany}.png` 로 다운로드가 트리거되고 window.open/location.href 사용 0건",
+        "캔버스 컨텍스트 획득 실패 또는 toBlob이 null이면 Toast '이미지를 저장하지 못했어요. 다시 시도해주세요.' 표시(throw·console.error 0건)",
+        "생성된 이미지 데이터가 localStorage에 기록되지 않음(저장 키 4개 크기 변화 없음)",
+        "버튼은 TDS Button(variant='weak', display='block'), 높이 48px 이상"
+      ]
+    },
+    "covers": [
+      "F7-AC-1",
+      "F7-AC-2",
+      "F7-AC-3",
+      "F7-AC-4",
+      "F7-AC-5"
+    ],
+    "files": [
+      "src/lib/shareImage.ts",
+      "src/components/SaveImageButton.tsx"
+    ],
+    "definition_of_done": [
+      "캔버스 텍스트 색상은 하드코딩 대신 getComputedStyle로 var(--tds-color-*) 값 조회 후 사용",
+      "성공 시 Toast '이미지를 저장했어요' + success 햅틱",
+      "npx tsc --noEmit 및 npm run build 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Whitelist: Button, Toast, Spacing. 버튼: <Button variant=\"weak\" size=\"large\" display=\"block\">결과 이미지 저장</Button>. 로딩 중에는 loading 상태 표시, 실패 시 Toast(position='bottom'). 커스텀 CSS 없음, 간격은 Spacing만."
+  },
+  {
+    "id": "0014",
+    "title": "순위 비교 화면 (`/rank`)",
+    "epic": "Epic 3. UI 페이지",
+    "task": {
+      "description": "현재 직장과 등록된 오퍼 전체(최대 3건)를 한 화면에서 총점 내림차순으로 비교하는 화면을 만든다. 각 행에 순위·회사명·총점·월 실수령·판정 Chip을 표시하고, 행 탭 시 해당 오퍼의 /compare로 이동한다. 오퍼가 0건이면 빈 상태를 렌더한다.",
+      "acceptance_criteria": [
+        "오퍼 3건 등록 시 data-testid='rank-row'가 4개(현재 직장 포함) 렌더되고 총점 내림차순 정렬",
+        "동점 시 createdAt 오름차순으로 안정 정렬되어 재렌더에도 순서가 바뀌지 않음",
+        "각 행에 '1위' 형태 순위, 회사명, 총점(소수 1자리), 월 실수령(천단위 콤마) 표시",
+        "오퍼 행 탭 시 navigate('/compare', { state: { targetOfferId } }) 호출, 현재 직장 행은 이동하지 않음",
+        "오퍼 0건이면 EmptyState '비교할 오퍼가 없어요' + '오퍼 추가하기' Button 렌더"
+      ]
+    },
+    "covers": [
+      "F6-AC-1",
+      "F6-AC-2",
+      "F6-AC-3",
+      "F6-AC-4",
+      "F6-AC-5"
+    ],
+    "files": [
+      "src/pages/Rank.tsx"
+    ],
+    "definition_of_done": [
+      "HEX 0개, Tailwind 여백 클래스 0개, TDS Spacing만 사용",
+      "가중치 합 0이어도 NaN이 화면에 노출되지 않음",
+      "npx tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: PageShell. Whitelist: ScreenScaffold, Top, ListRow, Chip, Paragraph, Spacing, EmptyState, Button, AdSlot, FloatingTabBar.\nLayout: <ScreenScaffold tabBar={<FloatingTabBar active=\"home\" />}>\n <Top title={<Top.TitleParagraph>오퍼 순위</Top.TitleParagraph>} />\n <Paragraph.Text typography=\"st13\" color=\"tertiary\">내 중요도 기준 총점 순이에요</Paragraph.Text>\n <Spacing size={16} />\n {rows.map((r,i) => <ListRow key={r.id} data-testid=\"rank-row\" onClick={r.kind==='offer' ? () => nav('/compare',{state:{targetOfferId:r.id}}) : undefined} contents={<ListRow.Texts type=\"2RowTypeA\" top={`${i+1}위 · ${r.companyName}`} bottom={`총점 ${r.total} · 월 실수령 ${format(r.monthlyNet)}원`} />} right={<Chip label={VERDICT_LABELS[r.verdict]} variant=\"outlined\" />} />)}\n <Spacing size={24} />\n <AdSlot adGroupId={import.meta.env.VITE_TOSS_AD_GROUP_ID} />\n</ScreenScaffold>\nStates: Loading = ListRow 3개 skeleton / Empty = EmptyState '비교할 오퍼가 없어요' + Button(weak) '오퍼 추가하기' / Error = '순위를 불러오지 못했어요. 다시 시도해주세요.' + 다시 시도 Button.\nInteractions: 행 탭 tickWeak."
+  },
+  {
+    "id": "0015",
+    "title": "검수 정책 가드 스크립트",
+    "epic": "Epic 3. UI 페이지",
+    "task": {
+      "description": "빌드 전에 검수 반려 요인을 자동 검출하는 Node 스크립트를 만든다. src 전체를 스캔해 HEX 색상 리터럴, 금지 UI 라이브러리 import, 외부 로그인/결제/광고 SDK, window.open/location.href 외부 이동, console.error, Tailwind 여백 클래스, 최신 전용 API(Array.at/Object.groupBy/structuredClone) 사용을 검사하고 위반 시 비정상 종료한다.",
+      "acceptance_criteria": [
+        "node scripts/policy-guard.mjs 실행 시 위반 0건이면 exit code 0, 1건 이상이면 exit code 1 + 파일:라인 목록 출력",
+        "HEX 리터럴(#RGB/#RRGGBB) 검출 규칙이 src/**/*.{ts,tsx,css}에 적용됨",
+        "@mui, antd, @chakra-ui, shadcn, stripe, iamport, bootpay, @tosspayments, admob, firebase/auth, @react-oauth import 검출",
+        "window.open 및 window.location.href 대입 검출",
+        "console.error 및 Array.at/Object.groupBy/structuredClone 사용 검출"
+      ]
+    },
+    "covers": [
+      "F8-AC-1",
+      "F8-AC-2",
+      "F8-AC-4",
+      "F8-AC-5",
+      "F8-AC-6",
+      "F8-AC-7",
+      "F8-AC-8"
+    ],
+    "files": [
+      "scripts/policy-guard.mjs",
+      "package.json"
+    ],
+    "definition_of_done": [
+      "package.json에 \"policy:guard\" 스크립트 추가(기존 스크립트 유지)",
+      "현재 코드베이스에서 실행 시 결과가 콘솔에 요약 출력됨",
+      "node scripts/policy-guard.mjs 가 에러 없이 실행 완료"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0016",
+    "title": "라우팅 + FloatingTabBar 배선 (App.tsx 단독 소유)",
+    "epic": "4",
+    "task": {
+      "description": "src/App.tsx에서 react-router-dom BrowserRouter/Routes로 6개 라우트(/, /offers, /offer/new, /offer/:id/edit, /weights, /compare, /rank)를 연결하고 FloatingTabBar(홈·오퍼·가중치 3탭)를 배선한다. 전역 Provider(광고/결제 SDK Provider 포함)도 이 패킷이 함께 배선하며 main.tsx는 수정하지 않는다.",
+      "acceptance_criteria": [
+        "모든 라우트가 정의되어 각 경로 직접 진입 시 흰 화면 없이 해당 페이지가 렌더",
+        "알 수 없는 경로 진입 시 홈으로 리다이렉트",
+        "FloatingTabBar가 홈/오퍼/가중치 3탭으로 렌더되고 활성 탭에 컬러 틴트 적용, /compare·/offer/* 에서는 탭바 미노출",
+        "navigate state는 RouteState 타입을 사용하며 타입 불일치 0건",
+        "src/main.tsx 미변경(@AI:ANCHOR 보존), npm run build 통과"
+      ]
+    },
+    "covers": [
+      "F2-AC-8",
+      "F8-AC-3"
+    ],
+    "files": [
+      "src/App.tsx",
+      "src/components/FloatingTabBar.tsx"
+    ],
+    "definition_of_done": [
+      "src/App.tsx를 files에 포함하는 패킷은 전체에서 이 패킷 1개뿐",
+      "하단 고정 탭바에 paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' 적용",
+      "npx tsc --noEmit 및 npm run build 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [
+      "react-router-dom"
+    ],
+    "ui_requirements": "FloatingTabBar 3탭: 홈(`/`) · 오퍼(`/offers`) · 가중치(`/weights`). 활성 탭은 컬러 틴트(var(--tds-color-*)), 비활성은 tertiary. 각 탭 터치 타깃 44px 이상, 탭 전환 시 generateHapticFeedback({ type: 'tickWeak' }). HEX 하드코딩 금지, TDS Spacing만 사용. 페이지 골격은 각 페이지의 ScreenScaffold가 담당하고 App.tsx는 Routes만 배선."
+  },
+  {
+    "id": "0017",
+    "title": "광고 배치 컴포넌트 + 계산 고지 최종 폴리시",
+    "epic": "Epic 4. 통합",
+    "task": {
+      "description": "홈·순위·비교 하단에 공통으로 넣는 광고 섹션 래퍼(AdSection)와 '규칙 기반 계산 결과입니다' 고지 컴포넌트(CalcNotice), 리워드 광고 상태 훅(useRewardGate)을 만든다. 광고가 콘텐츠와 겹치지 않도록 상하 Spacing을 강제하고, 고지 문구를 한 곳에서 관리한다. App.tsx/main.tsx는 수정하지 않는다.",
+      "acceptance_criteria": [
+        "AdSection이 <AdSlot adGroupId={import.meta.env.VITE_TOSS_AD_GROUP_ID} />를 Spacing size={24} 상하로 감싸 렌더하고, 콘텐츠와 겹치는 position:fixed/absolute 스타일 0건",
+        "CalcNotice가 '규칙 기반 계산 결과입니다'를 Paragraph.Text typography='st13' color='tertiary'로 렌더하며 문구 상수를 단일 export",
+        "useRewardGate(currentId,targetId)가 { isUnlocked, isLoading, error, requestUnlock, retry }를 반환하고 실패 시 error 문구만 노출(throw 0건)",
+        "광고 관련 ID는 전부 import.meta.env 참조이며 코드에 하드코딩된 ID 0건",
+        "AdMob/AdSense 등 외부 광고 SDK import 0건, src/App.tsx·src/main.tsx 미변경"
+      ]
+    },
+    "covers": [
+      "F8-AC-3",
+      "F5-AC-9"
+    ],
+    "files": [
+      "src/components/AdSection.tsx",
+      "src/components/CalcNotice.tsx",
+      "src/hooks/useRewardGate.ts"
+    ],
+    "definition_of_done": [
+      "HEX 0개, Tailwind 여백 클래스 0개",
+      "node scripts/policy-guard.mjs 실행 시 이 파일들에서 위반 0건",
+      "npx tsc --noEmit 및 npm run build 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "AdSection: <><Spacing size={24} /><AdSlot adGroupId={import.meta.env.VITE_TOSS_AD_GROUP_ID} /><Spacing size={24} /></> — 섹션 사이/결과 하단에만 배치, 콘텐츠 위에 겹치지 않음. CalcNotice: <Paragraph.Text typography=\"st13\" color=\"tertiary\">규칙 기반 계산 결과입니다</Paragraph.Text>. 리워드 게이트 실패 시 Toast(position='bottom') '광고를 불러오지 못했어요. 잠시 후 다시 시도해주세요.' + 다시 시도 Button(weak, 높이 48px)."
+  }
+]
