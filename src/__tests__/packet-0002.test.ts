@@ -341,7 +341,7 @@ describe("localStorage CRUD 헬퍼", () => {
       const result = saveOffer(fourthOffer);
 
       expect(result.ok).toBe(false);
-      expect(result.ok === false && result.error).toBe(true);
+      expect(result.ok === false && result.error).toBeTruthy();
       if (!result.ok) {
         expect(result.error).toContain("제안 직장");
         expect(result.error).toContain("최대 3개");
@@ -464,7 +464,7 @@ describe("localStorage CRUD 헬퍼", () => {
         const result = saveOffer(offer);
 
         expect(result.ok).toBe(false);
-        expect(result.ok === false && result.error).toBe(true);
+        expect(result.ok === false && result.error).toBeTruthy();
         if (!result.ok) {
           expect(result.error).toContain("저장 공간");
         }
@@ -531,7 +531,7 @@ describe("localStorage CRUD 헬퍼", () => {
       const result = saveWeights(weights);
 
       expect(result.ok).toBe(false);
-      expect(result.ok === false && result.error).toBe(true);
+      expect(result.ok === false && result.error).toBeTruthy();
       if (!result.ok) {
         expect(result.error).toContain("중요도");
         expect(result.error).toContain("최소 1개");

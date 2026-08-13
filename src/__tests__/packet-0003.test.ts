@@ -1,23 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { Offer } from "@/lib/types";
 
-// Import will be added when src/lib/calc.ts is implemented
-// For TDD red phase, these imports will fail until the implementation exists
-// Once the Coder implements src/lib/calc.ts, uncomment these:
-// import { validateOffer, getEffectiveTaxRate, calcMonthlyNet } from "@/lib/calc";
-
-// For now, use any to allow the test file to type-check during red phase
-// The actual functions will be imported once calc.ts is created
-declare function validateOffer(offer: Offer): Array<{ field: keyof Offer; message: string }>;
-declare function getEffectiveTaxRate(annualGross: number): number;
-declare function calcMonthlyNet(input: {
-  base: number;
-  bonus: number;
-  welfare: number;
-  remote: number;
-  commute: number;
-  lunch: number;
-}): number;
+import { validateOffer, getEffectiveTaxRate, calcMonthlyNet } from "@/lib/calc";
 
 /**
  * TDD Red Phase Tests for packet-0003: 입력 검증 + 월 실수령 계산
