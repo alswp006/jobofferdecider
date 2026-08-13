@@ -130,11 +130,12 @@ export function mockTds() {
     ),
 
     Top: Object.assign(
-      ({ children, title }: any) =>
+      ({ children, title, right }: any) =>
         React.createElement(
           "nav",
           { role: "navigation" },
           title && React.createElement("h1", null, title),
+          right && React.createElement("div", { "data-slot": "top-right" }, right),
           children,
         ),
       {
@@ -146,6 +147,13 @@ export function mockTds() {
 
     BottomCTA: ({ children }: any) =>
       React.createElement("div", { "data-slot": "bottom-cta" }, children),
+
+    // FixedBottomCTA는 그 자체가 <button>이다(.d.ts: HTMLButtonElement ref) — 안에 또
+    // Button을 넣으면 button>button 무효 HTML. children에 라벨을 직접 넣는다.
+    FixedBottomCTA: React.forwardRef(
+      ({ children, onClick, disabled, ...props }: any, ref: any) =>
+        React.createElement("button", { ref, onClick, disabled, ...props }, children),
+    ),
 
     BottomSheet: Object.assign(
       ({ children, open }: any) =>
