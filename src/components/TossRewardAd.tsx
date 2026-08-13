@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
+console.log("DEBUG MODULE TOP-LEVEL LOADED, timestamp marker AAAA111");
 import {
   loadFullScreenAd,
   showFullScreenAd,
@@ -16,6 +17,11 @@ interface TossRewardAdProps {
   buttonText?: string;
   /** 광고 시청 완료 콜백 */
   onRewarded?: () => void;
+  /**
+   * 광고 로드/시청 실패 콜백. 지정하면 실패 시 자동 언락 대신 이 콜백만 호출한다
+   * (호출부가 재시도 UI를 직접 소유 — 영구 잠금 방지는 호출부 책임).
+   */
+  onError?: () => void;
   /** 광고 로드 타임아웃 (ms). 초과 시 자동 언락 */
   timeoutMs?: number;
 }
@@ -40,8 +46,10 @@ export function TossRewardAd({
   description = "광고를 시청하면 결과를 확인할 수 있어요",
   buttonText = "광고 보고 확인하기",
   onRewarded,
+  onError,
   timeoutMs = 15000,
 }: TossRewardAdProps) {
+  throw new Error("REACHED_TOSS_REWARD_AD");
   const [unlocked, setUnlocked] = useState(false);
   const [isShowing, setIsShowing] = useState(false);
   const [adLoaded, setAdLoaded] = useState(false);
@@ -49,20 +57,30 @@ export function TossRewardAd({
 
   // Load the ad on mount
   useEffect(() => {
+    console.log("DEBUG effect mount, slotId=", slotId, "onError=", !!onError);
     try {
       loadFullScreenAd({
         slotId,
         onEvent: () => setAdLoaded(true),
         onError: () => {
-          // Load failed (e.g., local browser) — auto-unlock
+          // Load failed (e.g., local browser) — auto-unlock, unless the caller
+          // owns its own failure UI (onError), in which case defer to it.
+          if (onError) {
+            onError();
+            return;
+          }
           setUnlocked(true);
           onRewarded?.();
         },
       } as Parameters<typeof loadFullScreenAd>[0]);
     } catch {
-      // SDK not available (e.g., jsdom) — auto-unlock
-      setUnlocked(true);
-      onRewarded?.();
+      // SDK not available (e.g., jsdom) — auto-unlock, unless onError is owned by caller
+      if (onError) {
+        onError();
+      } else {
+        setUnlocked(true);
+        onRewarded?.();
+      }
     }
 
     return () => {
@@ -71,15 +89,23 @@ export function TossRewardAd({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotId]);
 
+  console.log("DEBUG render, unlocked=", unlocked, "adLoaded=", adLoaded, "isShowing=", isShowing);
+  return React.createElement("div", { "data-marker": "TOSS_REWARD_AD_MARKER" }, unlocked ? children : "GATE_PLACEHOLDER");
   if (unlocked) {
     return <>{children}</>;
   }
 
   const handleWatch = () => {
+    console.log("DEBUG handleWatch called, onError=", !!onError);
     setIsShowing(true);
 
     // Timeout fallback
     timeoutRef.current = setTimeout(() => {
+      setIsShowing(false);
+      if (onError) {
+        onError();
+        return;
+      }
       setUnlocked(true);
       onRewarded?.();
     }, timeoutMs);
@@ -88,6 +114,7 @@ export function TossRewardAd({
       showFullScreenAd({
         slotId,
         onEvent: (event: { type?: string }) => {
+          console.log("DEBUG onEvent fired", event);
           if (timeoutRef.current) clearTimeout(timeoutRef.current);
           // event.type === 'rewarded' indicates completion (SDK version-dependent)
           // For safety, unlock on any event that finishes the ad
@@ -102,17 +129,26 @@ export function TossRewardAd({
         },
         onError: () => {
           if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          // Playback failed — unlock as fallback
-          setUnlocked(true);
           setIsShowing(false);
+          // Playback failed — unlock as fallback, unless the caller owns its
+          // own failure UI (onError), in which case defer to it (no auto-unlock).
+          if (onError) {
+            onError();
+            return;
+          }
+          setUnlocked(true);
           onRewarded?.();
         },
       } as Parameters<typeof showFullScreenAd>[0]);
     } catch {
-      // SDK call threw — unlock
+      // SDK call threw
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      setUnlocked(true);
       setIsShowing(false);
+      if (onError) {
+        onError();
+        return;
+      }
+      setUnlocked(true);
       onRewarded?.();
     }
   };
