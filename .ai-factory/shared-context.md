@@ -194,6 +194,7 @@ export const AXIS_LABELS: Record<Axis, string> = {
     SummaryHero.tsx
     TossPurchase.tsx
     TossRewardAd.tsx
+    __DebugComp.tsx
   hooks/
   lib/
     calc.ts
@@ -206,6 +207,7 @@ export const AXIS_LABELS: Record<Axis, string> = {
     utils.ts
   main.tsx
   pages/
+    Compare.tsx
     Home.tsx
   styles/
     globals.css
@@ -240,6 +242,7 @@ export const AXIS_LABELS: Record<Axis, string> = {
 - SummaryHero.tsx: SummaryHero
 - TossPurchase.tsx: TossPurchase
 - TossRewardAd.tsx: TossRewardAd
+- __DebugComp.tsx: DebugComp
 
 ### Module Dependencies (import graph)
   lib/calc.ts → imports: lib/types
@@ -247,6 +250,7 @@ export const AXIS_LABELS: Record<Axis, string> = {
   lib/score.ts → imports: lib/types, lib/types, lib/calc, lib/negotiation
   lib/shareImage.ts → imports: lib/types, lib/types
   lib/storage.ts → imports: lib/types, lib/types
+  pages/Compare.tsx → imports: components/ScreenScaffold, components/SummaryHero, components/Amount, components/Card, components/StateView, components/TossRewardAd, components/AdSlot, lib/storage, lib/score, lib/types
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
