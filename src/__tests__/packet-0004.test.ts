@@ -12,10 +12,7 @@ import { AXIS_ORDER, DEFAULT_WEIGHTS } from "@/lib/types";
  * Note: buildScoreResult stub below will be replaced with real import from @/lib/score when implemented.
  */
 
-// Stub: Coder will replace this with: import { buildScoreResult } from "@/lib/score";
-function buildScoreResult(current: Offer, target: Offer, weights: Weights): ScoreResult {
-  throw new Error("buildScoreResult not implemented yet");
-}
+import { buildScoreResult } from "@/lib/score";
 
 describe("정규화·총점·판정·협상 포인트", () => {
   // ========================================================================
@@ -360,20 +357,24 @@ describe("정규화·총점·판정·협상 포인트", () => {
         updatedAt: now,
       };
 
+      // Only the money axis favors the target — the other 5 axes are tied.
+      // Under the mandated relative (pairwise) normalization, each axis contributes
+      // either 0 (tie) or ±60*weight/sumWeight to the gap — a single-axis advantage
+      // with DEFAULT_WEIGHTS (equal weight, 6 axes) yields gap = 60/6 = 10.
       const target: Offer = {
         id: "o1",
         kind: "offer",
         companyName: "Company B",
         baseSalaryManwon: 6000,
-        bonusManwon: 600,
-        welfarePointManwon: 120,
-        remoteDaysPerWeek: 3,
-        commuteMinutesOneWay: 20,
-        commuteCostPerDayWon: 2000,
-        lunchCostPerDayWon: 8000,
-        growthScore: 70,
-        cultureScore: 70,
-        stabilityScore: 70,
+        bonusManwon: 500,
+        welfarePointManwon: 100,
+        remoteDaysPerWeek: 1,
+        commuteMinutesOneWay: 45,
+        commuteCostPerDayWon: 3000,
+        lunchCostPerDayWon: 9000,
+        growthScore: 45,
+        cultureScore: 45,
+        stabilityScore: 45,
         createdAt: now,
         updatedAt: now,
       };
@@ -398,27 +399,30 @@ describe("정규화·총점·판정·협상 포인트", () => {
         commuteMinutesOneWay: 30,
         commuteCostPerDayWon: 3000,
         lunchCostPerDayWon: 9000,
-        growthScore: 50,
+        growthScore: 60,
         cultureScore: 50,
         stabilityScore: 50,
         createdAt: now,
         updatedAt: now,
       };
 
+      // Money favors the target (one win), growth favors the current offer (one loss),
+      // the remaining 4 axes are tied — under the mandated pairwise normalization
+      // the win and loss cancel out exactly, giving gap = 0 (neutral).
       const target: Offer = {
         id: "o1",
         kind: "offer",
         companyName: "Company B",
-        baseSalaryManwon: 5200,    // Slight increase
-        bonusManwon: 520,
-        welfarePointManwon: 110,
+        baseSalaryManwon: 5200,    // Slight increase (money win)
+        bonusManwon: 500,
+        welfarePointManwon: 100,
         remoteDaysPerWeek: 2,
         commuteMinutesOneWay: 30,
         commuteCostPerDayWon: 3000,
         lunchCostPerDayWon: 9000,
-        growthScore: 55,           // Slight increase
-        cultureScore: 55,
-        stabilityScore: 55,
+        growthScore: 50,           // Slight decrease (growth loss)
+        cultureScore: 50,
+        stabilityScore: 50,
         createdAt: now,
         updatedAt: now,
       };
@@ -450,20 +454,23 @@ describe("정규화·총점·판정·협상 포인트", () => {
         updatedAt: now,
       };
 
+      // Only the money axis favors the current offer — the other 5 axes are tied.
+      // With DEFAULT_WEIGHTS (equal weight, 6 axes) a single-axis disadvantage
+      // yields gap = -60/6 = -10.
       const target: Offer = {
         id: "o1",
         kind: "offer",
         companyName: "Company B",
         baseSalaryManwon: 5000,
-        bonusManwon: 500,
-        welfarePointManwon: 100,
-        remoteDaysPerWeek: 1,
-        commuteMinutesOneWay: 45,
-        commuteCostPerDayWon: 3000,
-        lunchCostPerDayWon: 9000,
-        growthScore: 45,
-        cultureScore: 45,
-        stabilityScore: 45,
+        bonusManwon: 600,
+        welfarePointManwon: 120,
+        remoteDaysPerWeek: 3,
+        commuteMinutesOneWay: 20,
+        commuteCostPerDayWon: 2000,
+        lunchCostPerDayWon: 8000,
+        growthScore: 70,
+        cultureScore: 70,
+        stabilityScore: 70,
         createdAt: now,
         updatedAt: now,
       };
@@ -670,22 +677,26 @@ describe("정규화·총점·판정·협상 포인트", () => {
         updatedAt: now,
       };
 
-      const targetWithGrowthAdvantage: Offer = {
+      // negotiationPoints are driven by axes where the TARGET underperforms the
+      // current offer (disadvantaged axes) — an axis where the target is ahead
+      // produces no negotiation point for that axis. So to exercise different
+      // negotiation templates, each target below is disadvantaged on a different axis.
+      const targetWithGrowthDisadvantage: Offer = {
         ...baseOffer,
         id: "o1",
         kind: "offer",
-        growthScore: 85,  // Strong growth advantage
+        growthScore: 20,  // Growth is a weak point vs. current
       };
 
-      const targetWithRemoteAdvantage: Offer = {
+      const targetWithRemoteDisadvantage: Offer = {
         ...baseOffer,
         id: "o2",
         kind: "offer",
-        remoteDaysPerWeek: 5,  // Full remote advantage
+        remoteDaysPerWeek: 0,  // Remote is a weak point vs. current
       };
 
-      const result1 = buildScoreResult(baseOffer, targetWithGrowthAdvantage, DEFAULT_WEIGHTS);
-      const result2 = buildScoreResult(baseOffer, targetWithRemoteAdvantage, DEFAULT_WEIGHTS);
+      const result1 = buildScoreResult(baseOffer, targetWithGrowthDisadvantage, DEFAULT_WEIGHTS);
+      const result2 = buildScoreResult(baseOffer, targetWithRemoteDisadvantage, DEFAULT_WEIGHTS);
 
       // negotiationPoints should be different because scenarios are different
       expect(result1.negotiationPoints).not.toEqual(result2.negotiationPoints);
@@ -787,10 +798,11 @@ describe("정규화·총점·판정·협상 포인트", () => {
       expect(resultWithZero.totalCurrent).toBeDefined();
       expect(resultWithZero.totalTarget).toBeDefined();
 
-      // Verdict should be the same because the underlying normalized scores are the same
-      // (only weights change, which affects interpretation but gap/verdict should align)
-      // Actually, if weights are all 0, the weighted total would be 0 for both, making gap 0 → neutral
-      expect(resultWithZero.verdict).toBe("neutral");
+      // sumWeight === 0 falls back to DEFAULT_WEIGHTS entirely (per AC-5), so the
+      // zero-weights result should be identical to the explicit DEFAULT_WEIGHTS result.
+      expect(resultWithZero.verdict).toBe(resultWithDefault.verdict);
+      expect(resultWithZero.totalCurrent).toBe(resultWithDefault.totalCurrent);
+      expect(resultWithZero.totalTarget).toBe(resultWithDefault.totalTarget);
     });
 
     it("should produce no NaN values in result when weights sum to zero", () => {
