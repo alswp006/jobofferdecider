@@ -1,73 +1,217 @@
-import { Top, Paragraph, Spacing, ListRow, Button } from '@toss/tds-mobile';
-import { useNavigate } from 'react-router-dom';
-import { ScreenScaffold } from '../components/ScreenScaffold';
-import { SummaryHero } from '../components/SummaryHero';
-import { Card } from '../components/Card';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Top, Button, Paragraph, Spacing, ListRow, AlertDialog, Toast } from "@toss/tds-mobile";
+import { generateHapticFeedback } from "@apps-in-toss/web-framework";
+import { ScreenScaffold } from "@/components/ScreenScaffold";
+import { SummaryHero } from "@/components/SummaryHero";
+import { Amount } from "@/components/Amount";
+import { EmptyState, LoadingState } from "@/components/StateView";
+import { AdSlot } from "@/components/AdSlot";
+import { loadOffers, loadMeta, setCalcNoticeAcknowledged } from "@/lib/storage";
+import { calcMonthlyNet } from "@/lib/calc";
+import { formatNumber } from "@/lib/utils";
+import type { Offer, RouteState } from "@/lib/types";
 
-/**
- * Golden Home page — 대시보드/탭-루트 골든 레퍼런스.
- *
- * 다른 페이지를 쓸 때 이 패턴을 모방하라:
- * - ScreenScaffold로 감싼다(raw fragment 골격 금지) — safe-area + 100dvh 자동 처리.
- * - 화면 최상단에 SummaryHero로 시각 앵커를 만든다('휑함'의 가장 큰 원인은 앵커 부재).
- *   데이터가 있으면 value에 <Amount value={n} unit="원" typography="t1" />로 핵심 숫자를 크게 박아라.
- * - 1차 진입 액션은 SummaryHero 카드 내부 버튼(display="block", 전체폭)에 둔다.
- *   → 화면 중앙 부유/좌측 글자폭 버튼 금지. 하단 TabBar가 있으면 SubmitFooter와 겹치므로 카드 안에.
- * - 핵심 정보는 raw <div>가 아니라 Card로 묶어 위계를 만든다.
- * - 하단 탭이 필요하면(2~5탭): bottom={<FloatingTabBar items={[{label,path}...]} />}.
- *   ('TDS TabBar'는 존재하지 않는다 — 직접 만들지 말고 FloatingTabBar를 써라.)
- * - 카피는 CLAUDE.md "카피 규칙 — AI 냄새 금지"를 따른다: 기능 나열식 홍보 문구·상투구·
- *   generic 버튼("시작하기") 금지. 이 파일의 예시 문구도 앱 맥락에 맞게 교체 대상이다.
- *
- * Scaffold tokens (replaced by scaffold-toss.ts at project creation):
- *   JobOfferDecider -> the app's display name
- *   이직 제안을 받았을 때 연봉·복지·성장성을 점수화해 현재 직장과 수치로 비교하고, 최종 의사결정 분석표는 리워드 광고 후 공개    -> the one-line description
- */
+function monthlyNetOf(offer: Offer): number {
+  return calcMonthlyNet({
+    base: offer.baseSalaryManwon,
+    bonus: offer.bonusManwon,
+    welfare: offer.welfarePointManwon,
+    remote: offer.remoteDaysPerWeek,
+    commute: offer.commuteCostPerDayWon,
+    lunch: offer.lunchCostPerDayWon,
+  });
+}
 
-// ⚠ 이 목록은 골격 예시다 — 앱의 실제 콘텐츠(핵심 지표·최근 기록·바로가기)로 반드시 교체하라.
-// '간편한 사용/빠른 처리' 같은 기능 나열식 홍보 문구는 카피 규칙(CLAUDE.md "AI 냄새 금지") 위반이다.
-// 사용자가 이 화면에서 실제로 확인할 정보를 넣어라 — 아래처럼 데이터가 사는 행으로.
-const HIGHLIGHTS = [
-  { title: '오늘', description: '아직 기록이 없어요' },
-  { title: '이번 주', description: '기록 3건 · 평균 12분' },
-];
+function fireTickWeak() {
+  try {
+    Promise.resolve(generateHapticFeedback({ type: "tickWeak" })).catch(() => {});
+  } catch {
+    /* WebView 밖(브라우저/검수자 PC/jsdom)에서는 throw — 무시 */
+  }
+}
+
+// Asset.ContentIcon은 name으로 CDN에서 아이콘을 조회한다 — 검증된 아이콘 키 목록이 없어
+// 값을 지어내면 실제 브라우저에서 404/403으로 컴포넌트가 크래시한다(모르면 지어내지 말 것).
+// 대신 의존성 없는 이모지 글리프로 빈 상태 아이콘을 대체한다.
+function EmptyIcon({ glyph, label }: { glyph: string; label: string }) {
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      style={{
+        display: "inline-flex",
+        width: 48,
+        height: 48,
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 24,
+        borderRadius: 24,
+        backgroundColor: "var(--adaptiveLayeredBackground)",
+      }}
+    >
+      {glyph}
+    </span>
+  );
+}
 
 export default function Home() {
   const navigate = useNavigate();
 
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [currentOffer, setCurrentOffer] = useState<Offer | undefined>(undefined);
+  const [targetOffers, setTargetOffers] = useState<Offer[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(() => !loadMeta().calcNoticeAcknowledged);
+  const [toast, setToast] = useState<{ open: boolean; text: string }>({ open: false, text: "" });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        const offers = loadOffers();
+        setCurrentOffer(offers.find((o) => o.kind === "current"));
+        setTargetOffers(offers.filter((o) => o.kind === "offer"));
+        setLoadError(false);
+      } catch {
+        setLoadError(true);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  function handleConfirmNotice() {
+    try {
+      setCalcNoticeAcknowledged(true);
+      setDialogOpen(false);
+    } catch {
+      setToast({ open: true, text: "저장 공간이 부족해요. 오퍼를 삭제 후 다시 시도해주세요." });
+    }
+  }
+
+  function handleCardClick(targetOfferId: string) {
+    fireTickWeak();
+    const state: RouteState["/compare"] = { targetOfferId };
+    navigate("/compare", { state });
+  }
+
+  function handleRetry() {
+    setLoadError(false);
+    setIsLoading(true);
+  }
+
   return (
     <ScreenScaffold
-      top={<Top title={<Top.TitleParagraph>JobOfferDecider</Top.TitleParagraph>} />}
+      top={
+        <Top
+          title={<Top.TitleParagraph>이직 결정</Top.TitleParagraph>}
+          right={
+            <Button variant="weak" size="small" onClick={() => navigate("/weights")}>
+              가중치
+            </Button>
+          }
+        />
+      }
     >
-      {/* 시각 앵커: 헤드라인 + 카드 내 진입 버튼(부유 금지, display="block" 전체폭).
-          데이터 앱이면 value를 <Amount typography="t1" />(핵심 숫자)로 교체하라. */}
-      <SummaryHero
-        label="JobOfferDecider"
-        value={<Paragraph.Text typography="t2">이직 제안을 받았을 때 연봉·복지·성장성을 점수화해 현재 직장과 수치로 비교하고, 최종 의사결정 분석표는 리워드 광고 후 공개</Paragraph.Text>}
-        caption="로그인 없이 바로 쓸 수 있어요"
-        action={
-          // 라벨은 앱의 핵심 행동 동사로 교체하라 — "연봉 계산하기"/"기록 남기기" 등.
-          // generic "시작하기"/"확인"은 카피 규칙 위반. onClick도 실제 첫 화면 경로로.
-          <Button variant="fill" display="block" onClick={() => navigate('/')}>
-            첫 결과 보기
+      {isLoading ? (
+        <LoadingState rows={3} testId="home-skeleton" />
+      ) : loadError ? (
+        <>
+          <Paragraph.Text typography="t5">정보를 불러오지 못했어요. 다시 시도해주세요.</Paragraph.Text>
+          <Spacing size={12} />
+          <Button variant="weak" onClick={handleRetry}>
+            다시 시도
           </Button>
-        }
-        testId="home-hero"
+        </>
+      ) : !currentOffer ? (
+        <EmptyState
+          testId="empty-state"
+          icon={<EmptyIcon glyph="🏢" label="현재 직장 등록" />}
+          title="현재 직장을 먼저 등록해요"
+          description="연봉·통근·재택 정보를 넣으면 비교를 시작할 수 있어요"
+          action={
+            <Button
+              variant="weak"
+              display="block"
+              style={{ height: 48 }}
+              onClick={() => navigate("/offer/new", { state: { kind: "current" } })}
+            >
+              현재 직장 등록하기
+            </Button>
+          }
+        />
+      ) : (
+        <>
+          <SummaryHero
+            testId="home-hero"
+            label="현재 직장 월 실수령"
+            value={<Amount value={monthlyNetOf(currentOffer)} unit="원" typography="t1" />}
+            caption="복지포인트·통근·점심값 반영 추정치"
+          />
+
+          <Spacing size={24} />
+          <Paragraph.Text typography="st13" color="tertiary">
+            규칙 기반 계산 결과입니다
+          </Paragraph.Text>
+          <Spacing size={24} />
+          <Paragraph.Text typography="t4">비교할 오퍼</Paragraph.Text>
+          <Spacing size={12} />
+
+          {targetOffers.length === 0 ? (
+            <EmptyState
+              testId="empty-state"
+              icon={<EmptyIcon glyph="📭" label="오퍼 없음" />}
+              title="아직 받은 오퍼가 없어요"
+              description="제안받은 회사 정보를 등록하면 바로 비교할 수 있어요"
+              action={
+                <Button variant="weak" onClick={() => navigate("/offer/new", { state: { kind: "offer" } })}>
+                  제안 직장 추가하기
+                </Button>
+              }
+            />
+          ) : (
+            targetOffers.map((offer) => {
+              const texts = (
+                <ListRow.Texts
+                  type="2RowTypeA"
+                  top={offer.companyName}
+                  bottom={`월 실수령 ${formatNumber(monthlyNetOf(offer))}원`}
+                />
+              );
+              return (
+                <ListRow
+                  key={offer.id}
+                  data-testid="offer-card"
+                  style={{ minHeight: 64 }}
+                  onClick={() => handleCardClick(offer.id)}
+                  contents={texts}
+                >
+                  {texts}
+                </ListRow>
+              );
+            })
+          )}
+
+          <Spacing size={16} />
+          <AdSlot adGroupId="home-offer-list" />
+        </>
+      )}
+
+      <AlertDialog
+        open={dialogOpen}
+        title="계산 방식 안내"
+        description="입력값 기반 규칙 계산 결과예요. 세율은 구간 근사치로 추정해요."
+        alertButton={<AlertDialog.AlertButton onClick={handleConfirmNotice}>확인</AlertDialog.AlertButton>}
+        onClose={() => setDialogOpen(false)}
       />
 
-      <Spacing size={24} />
-
-      {/* 핵심 정보는 Card로 묶기(raw div 금지) — 위계 생성 */}
-      <Card testId="home-highlights">
-        {HIGHLIGHTS.map((h, idx) => (
-          <ListRow
-            key={idx}
-            contents={<ListRow.Texts type="2RowTypeA" top={h.title} bottom={h.description} />}
-          />
-        ))}
-      </Card>
-
-      <Spacing size={24} />
+      <Toast
+        open={toast.open}
+        text={toast.text}
+        position="bottom"
+        onClose={() => setToast((t) => ({ ...t, open: false }))}
+      />
     </ScreenScaffold>
   );
 }
