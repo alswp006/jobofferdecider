@@ -186,6 +186,7 @@ export const AXIS_LABELS: Record<Axis, string> = {
     FloatingTabBar.tsx
     MiniBar.tsx
     PageShell.tsx
+    ScoreSelector.tsx
     ScreenScaffold.tsx
     Sparkline.tsx
     StateView.tsx
@@ -228,6 +229,7 @@ export const AXIS_LABELS: Record<Axis, string> = {
 - FloatingTabBar.tsx: FloatingTabBar
 - MiniBar.tsx: MiniBar
 - PageShell.tsx: PageShell
+- ScoreSelector.tsx: ScoreSelector
 - ScreenScaffold.tsx: ScreenScaffold
 - Sparkline.tsx: Sparkline
 - StateView.tsx: EmptyState, LoadingState
@@ -245,3 +247,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 ## Already Implemented (do NOT duplicate or overwrite)
 - 0003: 입력 검증 + 월 실수령 계산 (files: src/lib/calc.ts)
 - 0004: 정규화·총점·판정·협상 포인트 (files: src/lib/score.ts, src/lib/negotiation.ts)
+- 0009: 점수 선택 컴포넌트 (성장성·조직문화·안정성) (files: src/components/ScoreSelector.tsx)
