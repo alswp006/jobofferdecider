@@ -186,6 +186,7 @@ export const AXIS_LABELS: Record<Axis, string> = {
     FloatingTabBar.tsx
     MiniBar.tsx
     PageShell.tsx
+    SaveImageButton.tsx
     ScoreSelector.tsx
     ScreenScaffold.tsx
     Sparkline.tsx
@@ -199,6 +200,7 @@ export const AXIS_LABELS: Record<Axis, string> = {
     contract.ts
     negotiation.ts
     score.ts
+    shareImage.ts
     storage.ts
     types.ts
     utils.ts
@@ -216,6 +218,7 @@ export const AXIS_LABELS: Record<Axis, string> = {
 - contract.ts: export type Offer =; export type Weight =; export type RouteState = 'home' | 'offers' | 'offer-new' | 'offer-edit' | 'weights' | 'compare' | 'rank'; export type useOffersFn = () =>; export type useWeightsFn = () =>; export type useUnlockFn = () =>; export type useAppMetaFn = () =>; export type useRewardGateFn = () =>
 - negotiation.ts: export function buildNegotiationPoints( disadvantagedAxes: AxisScore[], money: MoneyBreakdown, targetAnnualGrossWon: num
 - score.ts: export function buildScoreResult(current: Offer, target: Offer, weights: Weights): ScoreResult
+- shareImage.ts: export async function saveResultImage( result: ScoreResult, companyNames: CompanyNames, ): Promise<boolean>
 - storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void; export function newOfferId(): string; export function loadOffers(): Offer[]; export function saveOffer(offer: Offer): SaveResult; export function deleteOffer(id: string): void; export function getOfferById(id: string): Offer | undefined
 - types.ts: export type OfferKind = "current" | "offer"; export interface Offer; export interface Weights; export const Weights =; export interface AxisScore; export const AxisScore =; export interface MoneyBreakdown; export const MoneyBreakdown =
 - utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
@@ -229,6 +232,7 @@ export const AXIS_LABELS: Record<Axis, string> = {
 - FloatingTabBar.tsx: FloatingTabBar
 - MiniBar.tsx: MiniBar
 - PageShell.tsx: PageShell
+- SaveImageButton.tsx: SaveImageButton
 - ScoreSelector.tsx: ScoreSelector
 - ScreenScaffold.tsx: ScreenScaffold
 - Sparkline.tsx: Sparkline
@@ -241,6 +245,7 @@ export const AXIS_LABELS: Record<Axis, string> = {
   lib/calc.ts → imports: lib/types
   lib/negotiation.ts → imports: lib/types, lib/calc
   lib/score.ts → imports: lib/types, lib/types, lib/calc, lib/negotiation
+  lib/shareImage.ts → imports: lib/types, lib/types
   lib/storage.ts → imports: lib/types, lib/types
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
@@ -248,3 +253,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0003: 입력 검증 + 월 실수령 계산 (files: src/lib/calc.ts)
 - 0004: 정규화·총점·판정·협상 포인트 (files: src/lib/score.ts, src/lib/negotiation.ts)
 - 0009: 점수 선택 컴포넌트 (성장성·조직문화·안정성) (files: src/components/ScoreSelector.tsx)
+- 0013: 결과 이미지 저장 유틸 + 저장 버튼 (files: src/lib/shareImage.ts, src/components/SaveImageButton.tsx)
