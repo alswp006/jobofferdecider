@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import React from "react";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent, within, cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { mockTds, mockAppsInToss, mockRouter, mockNavigate, mockLocation } from "@/__tests__/__helpers__/mocks";
@@ -208,6 +208,7 @@ describe("직장·오퍼 입력 폼 화면 (`/offer/new`, `/offer/:id/edit`)", (
       const deleteButton = screen.getByRole("button", { name: "삭제" });
       expect(deleteButton).toHaveAttribute("color", "danger");
 
+      cleanup();
       renderForm("/offer/new");
       expect(screen.queryByRole("button", { name: "삭제" })).not.toBeInTheDocument();
     });
