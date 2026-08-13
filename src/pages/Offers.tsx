@@ -5,7 +5,6 @@ import { generateHapticFeedback } from "@apps-in-toss/web-framework";
 import { ScreenScaffold } from "@/components/ScreenScaffold";
 import { Card } from "@/components/Card";
 import { EmptyState, LoadingState } from "@/components/StateView";
-import { FloatingTabBar } from "@/components/FloatingTabBar";
 import { loadOffers } from "@/lib/storage";
 import type { Offer, OfferKind } from "@/lib/types";
 
@@ -64,17 +63,7 @@ export default function Offers() {
   };
 
   return (
-    <ScreenScaffold
-      top={<Top title={<Top.TitleParagraph>내 직장·오퍼</Top.TitleParagraph>} />}
-      bottom={
-        <FloatingTabBar
-          items={[
-            { label: "홈", path: "/" },
-            { label: "오퍼", path: "/offers" },
-          ]}
-        />
-      }
-    >
+    <ScreenScaffold top={<Top title={<Top.TitleParagraph>내 직장·오퍼</Top.TitleParagraph>} />}>
       <Tab onChange={handleTabChange}>
         <Tab.Item selected={idx === 0} onClick={() => handleTabChange(0)}>
           현재 직장

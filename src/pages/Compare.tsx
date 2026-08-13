@@ -97,7 +97,6 @@ export default function Compare() {
   const result = buildScoreResult(currentOffer, targetOffer, weights);
   const key = unlockKeyOf(currentOffer.id, targetOffer.id);
   const isUnlocked = unlockedNow || loadUnlock().unlockedComparisonKeys.includes(key);
-  console.log("DEBUG Compare render, isUnlocked=", isUnlocked, "adError=", adError);
 
   function handleUnlock() {
     addUnlockKey(key);
@@ -132,7 +131,7 @@ export default function Compare() {
       ) : (
         <>
           <SummaryHero
-            label="비교 결과"
+            label="이직 판정"
             value={<Paragraph.Text typography="t2">광고를 보면 바로 확인할 수 있어요</Paragraph.Text>}
             caption={`${currentOffer.companyName} vs ${targetOffer.companyName}`}
           />

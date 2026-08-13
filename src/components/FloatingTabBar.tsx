@@ -34,7 +34,8 @@ export function FloatingTabBar({ items }: { items: TabItem[] }) {
         display: "flex",
         justifyContent: "space-around",
         alignItems: "stretch",
-        padding: "6px 8px calc(var(--toss-safe-area-bottom) + 6px)",
+        padding: "6px 8px",
+        paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
         backgroundColor: "var(--adaptiveBackground)",
         borderTop: "1px solid var(--adaptiveGrey200)",
       }}

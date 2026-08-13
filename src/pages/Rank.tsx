@@ -3,7 +3,6 @@ import { Top, Paragraph, Spacing, ListRow, Badge, Button } from "@toss/tds-mobil
 import { generateHapticFeedback } from "@apps-in-toss/web-framework";
 import { ScreenScaffold } from "@/components/ScreenScaffold";
 import { EmptyState } from "@/components/StateView";
-import { FloatingTabBar } from "@/components/FloatingTabBar";
 import { AdSlot } from "@/components/AdSlot";
 import { getCurrentOffer, loadOffers, loadWeights } from "@/lib/storage";
 import { buildScoreResult } from "@/lib/score";
@@ -112,18 +111,7 @@ export default function Rank() {
     );
 
   return (
-    <ScreenScaffold
-      top={<Top title={<Top.TitleParagraph>오퍼 순위</Top.TitleParagraph>} />}
-      bottom={
-        <FloatingTabBar
-          items={[
-            { label: "홈", path: "/" },
-            { label: "오퍼", path: "/offers" },
-            { label: "순위", path: "/rank" },
-          ]}
-        />
-      }
-    >
+    <ScreenScaffold top={<Top title={<Top.TitleParagraph>오퍼 순위</Top.TitleParagraph>} />}>
       <Paragraph.Text typography="st13" color="tertiary">
         내 중요도 기준 총점 순이에요
       </Paragraph.Text>

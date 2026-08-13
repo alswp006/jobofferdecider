@@ -8,10 +8,10 @@ import { LoadingState } from "@/components/StateView";
 import { useWeights } from "@/hooks/useWeights";
 import { AXIS_ORDER, AXIS_LABELS, type Axis, type Weights } from "@/lib/types";
 
-/** SDK는 WebView 밖에서 throw하므로 가드 필수 — +/- 조절은 tickWeak. */
-function fireTickWeak() {
+/** SDK는 WebView 밖에서 throw하므로 가드 필수 — +/- 조절은 tickWeak, 저장은 success. */
+function fireHaptic(type: "tickWeak" | "success") {
   try {
-    Promise.resolve(generateHapticFeedback({ type: "tickWeak" })).catch(() => {});
+    Promise.resolve(generateHapticFeedback({ type })).catch(() => {});
   } catch {
     /* WebView 밖(브라우저/검수자 PC/jsdom)에서는 throw — 무시 */
   }
@@ -61,12 +61,13 @@ export default function WeightsPage() {
   const showResetNotice = wasReset || loadError;
 
   function adjust(axis: Axis, delta: number) {
-    fireTickWeak();
+    fireHaptic("tickWeak");
     setValues((prev) => ({ ...prev, [axis]: clamp(prev[axis] + delta) }));
   }
 
   function handleSave() {
     if (sum === 0) return;
+    fireHaptic("success");
     const result = save({ ...values, updatedAt: Date.now() });
     if (result.ok) {
       setSaved(true);
@@ -75,10 +76,7 @@ export default function WeightsPage() {
   }
 
   return (
-    <ScreenScaffold
-      top={<Top title={<Top.TitleParagraph>무엇이 더 중요한가요?</Top.TitleParagraph>} />}
-      bottom={<SubmitFooter label="저장하기" onClick={handleSave} disabled={sum === 0} />}
-    >
+    <ScreenScaffold top={<Top title={<Top.TitleParagraph>무엇이 더 중요한가요?</Top.TitleParagraph>} />}>
       <Paragraph.Text typography="st13" color="var(--adaptiveGrey600)">
         중요도는 0~10점으로 조절할 수 있어요
       </Paragraph.Text>
