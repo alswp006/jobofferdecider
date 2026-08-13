@@ -197,6 +197,7 @@ export const AXIS_LABELS: Record<Axis, string> = {
     __DebugComp.tsx
   hooks/
     useOffers.ts
+    useWeights.ts
   lib/
     calc.ts
     contract.ts
@@ -212,6 +213,8 @@ export const AXIS_LABELS: Record<Axis, string> = {
     Home.tsx
     OfferForm.tsx
     Offers.tsx
+    Rank.tsx
+    Weights.tsx
   styles/
     globals.css
     reward-ad.css
@@ -257,6 +260,8 @@ export const AXIS_LABELS: Record<Axis, string> = {
   pages/Home.tsx → imports: components/ScreenScaffold, components/SummaryHero, components/Amount, components/StateView, components/AdSlot, lib/storage, lib/calc, lib/utils, lib/types
   pages/OfferForm.tsx → imports: components/ScreenScaffold, components/BottomCTA, hooks/useOffers, lib/calc, lib/types
   pages/Offers.tsx → imports: components/ScreenScaffold, components/Card, components/StateView, components/FloatingTabBar, lib/storage, lib/types
+  pages/Rank.tsx → imports: components/ScreenScaffold, components/StateView, components/FloatingTabBar, components/AdSlot, lib/storage, lib/score, lib/types, lib/utils
+  pages/Weights.tsx → imports: components/ScreenScaffold, components/BottomCTA, components/StateView, hooks/useWeights, lib/types
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -267,3 +272,5 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0006: 홈 화면 (`/`) (files: src/pages/Home.tsx)
 - 0007: 오퍼 목록 화면 (`/offers`) (files: src/pages/Offers.tsx)
 - 0008: 직장·오퍼 입력 폼 화면 (`/offer/new`, `/offer/:id/edit`) (files: src/pages/OfferForm.tsx)
+- 0010: 가중치 설정 화면 (`/weights`) (files: src/pages/Weights.tsx)
+- 0014: 순위 비교 화면 (`/rank`) (files: src/pages/Rank.tsx)
