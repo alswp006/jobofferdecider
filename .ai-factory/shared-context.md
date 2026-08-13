@@ -196,6 +196,7 @@ export const AXIS_LABELS: Record<Axis, string> = {
     TossRewardAd.tsx
     __DebugComp.tsx
   hooks/
+    useOffers.ts
   lib/
     calc.ts
     contract.ts
@@ -209,6 +210,8 @@ export const AXIS_LABELS: Record<Axis, string> = {
   pages/
     Compare.tsx
     Home.tsx
+    OfferForm.tsx
+    Offers.tsx
   styles/
     globals.css
     reward-ad.css
@@ -251,6 +254,9 @@ export const AXIS_LABELS: Record<Axis, string> = {
   lib/shareImage.ts → imports: lib/types, lib/types
   lib/storage.ts → imports: lib/types, lib/types
   pages/Compare.tsx → imports: components/ScreenScaffold, components/SummaryHero, components/Amount, components/Card, components/StateView, components/TossRewardAd, components/AdSlot, lib/storage, lib/score, lib/types
+  pages/Home.tsx → imports: components/ScreenScaffold, components/SummaryHero, components/Amount, components/StateView, components/AdSlot, lib/storage, lib/calc, lib/utils, lib/types
+  pages/OfferForm.tsx → imports: components/ScreenScaffold, components/BottomCTA, hooks/useOffers, lib/calc, lib/types
+  pages/Offers.tsx → imports: components/ScreenScaffold, components/Card, components/StateView, components/FloatingTabBar, lib/storage, lib/types
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -258,3 +264,6 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0004: 정규화·총점·판정·협상 포인트 (files: src/lib/score.ts, src/lib/negotiation.ts)
 - 0009: 점수 선택 컴포넌트 (성장성·조직문화·안정성) (files: src/components/ScoreSelector.tsx)
 - 0013: 결과 이미지 저장 유틸 + 저장 버튼 (files: src/lib/shareImage.ts, src/components/SaveImageButton.tsx)
+- 0006: 홈 화면 (`/`) (files: src/pages/Home.tsx)
+- 0007: 오퍼 목록 화면 (`/offers`) (files: src/pages/Offers.tsx)
+- 0008: 직장·오퍼 입력 폼 화면 (`/offer/new`, `/offer/:id/edit`) (files: src/pages/OfferForm.tsx)
