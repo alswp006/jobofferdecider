@@ -196,6 +196,8 @@ export const AXIS_LABELS: Record<Axis, string> = {
   lib/
     calc.ts
     contract.ts
+    negotiation.ts
+    score.ts
     storage.ts
     types.ts
     utils.ts
@@ -211,6 +213,8 @@ export const AXIS_LABELS: Record<Axis, string> = {
 ### Exports (src/lib/)
 - calc.ts: export function getEffectiveTaxRate(annualGross: number): number; export function calcMonthlyNet(input:; export function validateOffer(offer: Offer): Array<
 - contract.ts: export type Offer =; export type Weight =; export type RouteState = 'home' | 'offers' | 'offer-new' | 'offer-edit' | 'weights' | 'compare' | 'rank'; export type useOffersFn = () =>; export type useWeightsFn = () =>; export type useUnlockFn = () =>; export type useAppMetaFn = () =>; export type useRewardGateFn = () =>
+- negotiation.ts: export function buildNegotiationPoints( disadvantagedAxes: AxisScore[], money: MoneyBreakdown, targetAnnualGrossWon: num
+- score.ts: export function buildScoreResult(current: Offer, target: Offer, weights: Weights): ScoreResult
 - storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void; export function newOfferId(): string; export function loadOffers(): Offer[]; export function saveOffer(offer: Offer): SaveResult; export function deleteOffer(id: string): void; export function getOfferById(id: string): Offer | undefined
 - types.ts: export type OfferKind = "current" | "offer"; export interface Offer; export interface Weights; export const Weights =; export interface AxisScore; export const AxisScore =; export interface MoneyBreakdown; export const MoneyBreakdown =
 - utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
@@ -233,8 +237,11 @@ export const AXIS_LABELS: Record<Axis, string> = {
 
 ### Module Dependencies (import graph)
   lib/calc.ts → imports: lib/types
+  lib/negotiation.ts → imports: lib/types, lib/calc
+  lib/score.ts → imports: lib/types, lib/types, lib/calc, lib/negotiation
   lib/storage.ts → imports: lib/types, lib/types
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
 - 0003: 입력 검증 + 월 실수령 계산 (files: src/lib/calc.ts)
+- 0004: 정규화·총점·판정·협상 포인트 (files: src/lib/score.ts, src/lib/negotiation.ts)
