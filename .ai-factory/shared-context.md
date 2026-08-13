@@ -178,9 +178,11 @@ export const AXIS_LABELS: Record<Axis, string> = {
 ### File Tree (src/)
   App.tsx
   components/
+    AdSection.tsx
     AdSlot.tsx
     Amount.tsx
     BottomCTA.tsx
+    CalcNotice.tsx
     Card.tsx
     CountUp.tsx
     FloatingTabBar.tsx
@@ -197,6 +199,7 @@ export const AXIS_LABELS: Record<Axis, string> = {
     __DebugComp.tsx
   hooks/
     useOffers.ts
+    useRewardGate.ts
     useWeights.ts
   lib/
     calc.ts
@@ -232,9 +235,11 @@ export const AXIS_LABELS: Record<Axis, string> = {
 - utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
 
 ### Components (src/components/)
+- AdSection.tsx: AdSection
 - AdSlot.tsx: AdSlot
 - Amount.tsx: Amount
 - BottomCTA.tsx: SubmitFooter, ButtonStack
+- CalcNotice.tsx: CalcNotice
 - Card.tsx: Card
 - CountUp.tsx: CountUp
 - FloatingTabBar.tsx: FloatingTabBar
@@ -274,3 +279,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0008: 직장·오퍼 입력 폼 화면 (`/offer/new`, `/offer/:id/edit`) (files: src/pages/OfferForm.tsx)
 - 0010: 가중치 설정 화면 (`/weights`) (files: src/pages/Weights.tsx)
 - 0014: 순위 비교 화면 (`/rank`) (files: src/pages/Rank.tsx)
+- 0017: 광고 배치 컴포넌트 + 계산 고지 최종 폴리시 (files: src/components/AdSection.tsx, src/components/CalcNotice.tsx, src/hooks/useRewardGate.ts)
