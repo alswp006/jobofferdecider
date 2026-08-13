@@ -37,7 +37,7 @@ vi.mock("@/hooks/useWeights", () => ({
   useWeights: vi.fn(),
 }));
 
-import Weights from "@/pages/Weights";
+import WeightsPage from "@/pages/Weights";
 import { useWeights } from "@/hooks/useWeights";
 
 const mockSave = vi.fn();
@@ -68,7 +68,7 @@ function setupUseWeights(overrides: {
 }
 
 function renderWeights() {
-  return render(React.createElement(MemoryRouter, null, React.createElement(Weights)));
+  return render(React.createElement(MemoryRouter, null, React.createElement(WeightsPage)));
 }
 
 function row(axis: string) {
