@@ -5,8 +5,6 @@ import { ONBOARDED_KEY } from '@/lib/constants';
 /**
  * 최초 1회만 뜨는 안내 다이얼로그.
  * props 없이 쓰면 스스로 노출 여부를 판단하고(localStorage), isOpen을 주면 그 값을 따른다.
- *
- * 임시 구현 — 패킷 0017이 이 파일의 최종 버전을 소유한다.
  */
 export function OnboardingDialog({
   isOpen,
@@ -41,9 +39,9 @@ export function OnboardingDialog({
   return (
     <AlertDialog
       open={visible}
-      title="입력한 조건은 이 기기에만 남아요"
-      description="현재 직장과 오퍼를 넣으면 월 실질가치와 점수를 비교해 보여줘요. 서버로 전송하지 않아요."
-      alertButton={<AlertDialog.AlertButton onClick={close}>닫기</AlertDialog.AlertButton>}
+      title="어떻게 비교하나요?"
+      description="연봉만이 아니라 통근·식대·복지·비금전 항목까지 합쳐 월 실질가치로 비교해요"
+      alertButton={<AlertDialog.AlertButton onClick={close}>확인</AlertDialog.AlertButton>}
       onClose={close}
     />
   );
