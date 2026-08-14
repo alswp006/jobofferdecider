@@ -124,7 +124,11 @@ export function mockTds() {
           null,
           React.createElement("label", null, label),
           React.createElement("input", { ref, "data-variant": variant, ...props }),
-          hasError && help && React.createElement("span", { role: "alert" }, help),
+          // Real TDS renders `help` below the field at all times — hasError only
+          // recolors it. Dropping it when there's no error hid default hint text
+          // from tests that assert on it.
+          help &&
+            React.createElement("span", { role: hasError ? "alert" : undefined }, help),
         ),
     ),
 
@@ -133,7 +137,9 @@ export function mockTds() {
         React.createElement(
           "nav",
           { role: "navigation" },
-          title && React.createElement("h1", null, title),
+          // title is typically <Top.TitleParagraph> (already renders <h1>) — don't
+          // re-wrap in another <h1> here, or jsdom flags invalid <h1><h1> nesting.
+          title,
           right,
           children,
         ),

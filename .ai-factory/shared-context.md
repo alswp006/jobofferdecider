@@ -265,3 +265,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0010: 회사 정보 입력 페이지 (S2) (files: src/pages/CompanyForm.tsx)
 - 0011: 중요도 설정 페이지 (S3) (files: src/pages/Weights.tsx)
 - 0012: 홈 페이지 (S1) (files: src/pages/Home.tsx)
+- 0019: 검수 컴플라이언스 스캔 & 빌드 타깃 고정 (files: vite.config.ts, src/lib/compliance.ts, package.json)
