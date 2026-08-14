@@ -120,6 +120,20 @@ export interface AppState {
   unlockedOfferIds: string[];
 }
 
+/** 폼 입력 중간 상태 (모든 숫자 필드를 문자열로 유지) */
+export interface ProfileDraft {
+  name: string;
+  baseSalary: string;
+  bonusPerYear: string;
+  remoteDaysPerWeek: string;
+  commuteMinutesOneWay: string;
+  commuteCostPerDay: string;
+  lunchCostPerDay: string;
+  mealSupportPerMonth: string;
+  welfarePointsPerYear: string;
+  ratings: NonMonetaryRatings;
+}
+
 /**
  * 라우팅 상태 타입 정의
  * 설계 원칙: 모든 화면 간 데이터 전달은 URL param + localStorage로만 수행하고

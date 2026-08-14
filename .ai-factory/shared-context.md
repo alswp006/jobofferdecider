@@ -255,3 +255,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0018: 라우터 배선 + FloatingTabBar + 전역 Provider (files: src/App.tsx)
 - 0004: 금전 실질가치 계산 (calcMoney) (files: src/lib/calc.ts)
 - 0006: 판정 & 협상 포인트 (getVerdict) (files: src/lib/verdict.ts)
+- 0007: 앱 상태 훅 (useAppState) (files: src/hooks/useAppState.ts)
