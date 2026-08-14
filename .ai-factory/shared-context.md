@@ -253,3 +253,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 ## Already Implemented (do NOT duplicate or overwrite)
 - 0001: 도메인 타입 + RouteState 정의 (files: src/lib/types.ts)
 - 0018: 라우터 배선 + FloatingTabBar + 전역 Provider (files: src/App.tsx)
+- 0004: 금전 실질가치 계산 (calcMoney) (files: src/lib/calc.ts)
