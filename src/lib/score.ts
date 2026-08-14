@@ -39,6 +39,8 @@ export function calcScore(
   const currentNet = (current.baseSalary + current.bonusPerYear) / 12;
   const offerNet = (offer.baseSalary + offer.bonusPerYear) / 12;
 
+  if (currentNet <= 0) return null;
+
   const moneyItem: ScoreItem = {
     key: "money",
     label: SCORE_LABELS.money,
