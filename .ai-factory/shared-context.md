@@ -1,11 +1,17 @@
+# Shared Context (auto-generated — do NOT modify)
+
+
+## 패킷 간 계약 (src/lib/contract.ts — 자동 생성, 수정 금지)
+여기 선언된 이름·인자·반환 타입은 확정이다. 기반 패킷은 이대로 구현하고,
+화면 패킷은 이대로 호출하라. 다르게 만들지 마라.
+
+```typescript
 /**
  * 패킷 간 인터페이스 계약 — 자동 생성. **수정하지 마라.**
  *
  * 기반 패킷은 여기 선언된 모양 그대로 구현하고, 화면 패킷은 여기 적힌 이름·인자·반환
  * 타입을 그대로 가정해도 된다. 추측이 어긋나 병합에서 무너지는 것을 막기 위한 파일이다.
  */
-
-import type { ReactNode } from "react";
 
 /** Core offer entity, used in 0004, 0005, 0006, 0013-0016 (구현: 패킷 0001) */
 export type OfferInfo = { id: string; companyName: string; salary: number; bonus: number; benefits: string[]; negotiable: string[] };
@@ -55,5 +61,11 @@ export type SaveResultImageProps = { result: CalculationResult; offer: OfferInfo
 /** Props for OnboardingDialog component, used in 0018 (구현: 패킷 0017) */
 export type OnboardingDialogProps = { isOpen: boolean; onClose: () => void };
 
-/** Props for ErrorBoundary component, used in 0018 (구현: 패킷 0017) */
-export type ErrorBoundaryProps = { children: ReactNode; onError?: (e: Error) => void };
+```
+
+## Shared Types Contract (IMPORT these, do NOT redefine)
+```typescript
+// Domain types — add your app-specific types here
+export {};
+
+```

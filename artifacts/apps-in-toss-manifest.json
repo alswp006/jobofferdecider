@@ -1,0 +1,25 @@
+{
+  "koreanName": "이직결정기",
+  "englishName": "JobOfferDecider",
+  "appName": "job-offer-decider",
+  "ageRating": "전체",
+  "supportEmail": "support@aifactory.dev",
+  "category": {
+    "primary": "생활",
+    "secondary": "채용"
+  },
+  "subtitle": "오퍼를 수치로 현명하게 비교",
+  "description": "현재 직장과 제안받은 직장의 정보를 입력하면, 연봉·상여·재택·통근시간·복지 등을 자동으로 점수화합니다. 중요도 슬라이더로 본인에게 맞는 가중치를 설정한 후, 세금과 생활비를 반영한 실질 월급 차이를 확인할 수 있습니다. 리워드 광고 시청 후 종합 점수, 추천 판정, 협상 포인트 분석표를 함께 공개해 데이터 기반 이직 의사결정을 돕습니다.",
+  "searchKeywords": [
+    "이직",
+    "연봉",
+    "오퍼",
+    "연봉협상",
+    "채용",
+    "커리어",
+    "복지",
+    "통근",
+    "구직",
+    "이직비교"
+  ]
+}
