@@ -13,55 +13,35 @@
  * 타입을 그대로 가정해도 된다. 추측이 어긋나 병합에서 무너지는 것을 막기 위한 파일이다.
  */
 
-import type { ReactNode } from "react";
+export type RouteState = 'home' | 'company' | 'weights' | 'result' | 'compare';
 
-/** Core offer entity, used in 0004, 0005, 0006, 0013-0016 (구현: 패킷 0001) */
-export type OfferInfo = { id: string; companyName: string; salary: number; bonus: number; benefits: string[]; negotiable: string[] };
+export type Company = { id: string; name: string; industry: string; size: number; revenue: number };
 
-/** Company details, used in 0005, 0007, 0010 (구현: 패킷 0001) */
-export type CompanyInfo = { name: string; industry?: string; location?: string; size?: string };
+export type Offer = { id: string; salary: number; bonus: number; benefits: string[]; year: number };
 
-/** Importance weights (0-100), used in 0005, 0006, 0007, 0011, 0013-0015 (구현: 패킷 0001) */
-export type Weights = { salary: number; bonus: number; benefits: number; workLife: number };
+export type Weights = { salary: number; bonus: number; benefits: number; growth: number; culture: number };
 
-/** Comparison verdict, used in 0006, 0013-0015 (구현: 패킷 0001) */
-export type Verdict = { better: 'A' | 'B' | 'tie'; reason: string; negotiablePoints: string[] };
+export type Score = { total: number; salary: number; bonus: number; benefits: number; growth: number; culture: number };
 
-/** Current screen state, used in 0007, 0018 (구현: 패킷 0001) */
-export type RouteState = 'S1' | 'S2' | 'S3' | 'S4' | 'S5' | 'S5-compare';
+export type calcMoneyFn = (amount: number, opts?: { currency?: string; rate?: number }) => string;
 
-/** Calculation output, used in 0013-0016 (구현: 패킷 0001) */
-export type CalculationResult = { score: number; breakdown: { salary: number; bonus: number; benefits: number; workLife: number } };
+export type calcScoreFn = (company: Company, offer: Offer, weights: Weights) => Score;
 
-/** Format amount as currency string, used in 0013-0016 (구현: 패킷 0004) */
-export type calcMoneyFn = (amount: number, opts?: { locale?: string; decimals?: number }) => string;
+export type getVerdictFn = (score: Score, threshold?: number) => { passed: boolean; message: string };
 
-/** Calculate composite score from offer and weights, used in 0013-0015 (구현: 패킷 0005) */
-export type calcScoreFn = (offer: OfferInfo, weights: Weights) => CalculationResult;
+export type useAppStateFn = () => { route: RouteState; company: Company | null; weights: Weights; offers: Offer[]; setRoute: (r: RouteState) => void };
 
-/** Determine comparison winner and reasoning, used in 0015 (구현: 패킷 0006) */
-export type getVerdictFn = (scoreA: CalculationResult, scoreB: CalculationResult, weights: Weights) => Verdict;
+export type validateFormFn = (data: unknown, schema: string) => { valid: boolean; errors: Record<string, string> };
 
-/** App state management hook, used in 0010-0015 (구현: 패킷 0007) */
-export type useAppStateFn = () => { state: { route: RouteState; offerA?: OfferInfo; offerB?: OfferInfo; weights: Weights }; setRoute: (s: RouteState) => void; setOfferA: (o: OfferInfo) => void; setOfferB: (o: OfferInfo) => void; setWeights: (w: Weights) => void };
+export type parseNumberInputFn = (value: string, opts?: { decimal?: number; min?: number; max?: number }) => number | null;
 
-/** Validate company name input, used in 0010 (구현: 패킷 0008) */
-export type validateCompanyNameFn = (name: string) => boolean;
+export type saveAppDataFn = (key: string, data: unknown) => void;
 
-/** Validate salary amount input, used in 0010 (구현: 패킷 0008) */
-export type validateSalaryFn = (amount: string) => boolean;
+export type loadAppDataFn = <T = unknown>(key: string, defaultValue?: T) => T | null;
 
-/** Format user currency input, used in 0010 (구현: 패킷 0008) */
-export type formatCurrencyInputFn = (input: string) => string;
+/** key 생략 시 전체 삭제 (구현: 패킷 0003) */
+export type clearAppDataFn = (key?: string) => void;
 
-/** Props for WeightSlider component, used in 0011 (구현: 패킷 0009) */
-export type WeightSliderProps = { label: string; value: number; min: number; max: number; onChange: (v: number) => void; unit?: string };
-
-/** Props for SaveResultImage component, used in 0013 (구현: 패킷 0016) */
-export type SaveResultImageProps = { result: CalculationResult; offer: OfferInfo; onSave?: (blob: Blob) => void };
-
-/** Props for OnboardingDialog component, used in 0018 (구현: 패킷 0017) */
-export type OnboardingDialogProps = {
 ```
 
 ## Shared Types Contract (IMPORT these, do NOT redefine)
@@ -190,20 +170,29 @@ export interface ScoreResult {
     MiniBar.tsx
     OnboardingDialog.tsx
     PageShell.tsx
+    ResultAnalysis.tsx
+    SaveResultImage.tsx
     ScreenScaffold.tsx
     Sparkline.tsx
     StateView.tsx
     SummaryHero.tsx
     TossPurchase.tsx
     TossRewardAd.tsx
+    WeightSlider.css
+    WeightSlider.tsx
   hooks/
+    useAppState.ts
   lib/
+    calc.ts
     compliance.ts
     constants.ts
     contract.ts
+    form.ts
+    score.ts
     storage.ts
     types.ts
     utils.ts
+    verdict.ts
   main.tsx
   pages/
     CompanyForm.tsx
@@ -218,12 +207,16 @@ export interface ScoreResult {
   vite-env.d.ts
 
 ### Exports (src/lib/)
+- calc.ts: export function getTaxRate(grossAnnual: number): number; export function calcMoney(profile: CompanyProfile): MoneyBreakdown
 - compliance.ts: export interface CompliancePattern; export interface ComplianceViolation; export const SCAN_EXCLUDE_PATHS = ['src/lib/compliance.ts', 'src/__tests__/'] as const; export const FORBIDDEN_PATTERNS: CompliancePattern[] = [; export function isScannableFile(relPath: string): boolean; export function scanSource(content: string, relPath: string): ComplianceViolation[]; export function formatViolation(violation: ComplianceViolation): string
 - constants.ts: export const TAX_TABLE = [; export const TIME_VALUE_PER_HOUR = 15_000; export const MAX_OFFERS = 3; export const STORAGE_KEY = "jod:state:v1"; export const ONBOARDED_KEY = "jod:onboarded:v1"; export const INITIAL_STATE: AppState =; export const SCORE_LABELS: Record< "money" | "growth" | "workLife" | "stability" | "culture" | "commuteEase", string > =; export const VERDICT_LABELS: Record<VerdictLevel, string> =
-- contract.ts: export type OfferInfo =; export type CompanyInfo =; export type Weights =; export type Verdict =; export type RouteState = 'S1' | 'S2' | 'S3' | 'S4' | 'S5' | 'S5-compare'; export type CalculationResult =; export type calcMoneyFn = (amount: number, opts?:; export type calcScoreFn = (offer: OfferInfo, weights: Weights) => CalculationResult
-- storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
+- contract.ts: export type RouteState = 'home' | 'company' | 'weights' | 'result' | 'compare'; export type Company =; export type Offer =; export type Weights =; export type Score =; export type calcMoneyFn = (amount: number, opts?:; export type calcScoreFn = (company: Company, offer: Offer, weights: Weights) => Score; export type getVerdictFn = (score: Score, threshold?: number) =>
+- form.ts: export function parseWon(input: string): number; export function formatWon(v: number): string; export function clampRange(v: number, min: number, max: number): number; export function validateProfile(draft: ProfileDraft): Record<string, string>; export function emptyDraft(): ProfileDraft
+- score.ts: export function normalizeWeights(weights: Weights): Record<keyof Weights, number>; export function calcScore( current: CompanyProfile | null, offer: CompanyProfile, weights: Weights, ): ScoreResult | nul
+- storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void; export function isValidAppState(raw: unknown): raw is AppState; export function migrate(raw: unknown): AppState; export function loadState(): AppState; export function saveState(state: AppState): boolean; export function isOnboarded(): boolean
 - types.ts: export type Won = number; export interface CompanyProfile; export interface NonMonetaryRatings; export interface Weights; export const DEFAULT_WEIGHTS: Weights =; export interface MoneyBreakdown; export type VerdictLevel = "MOVE" | "CONDITIONAL" | "HOLD" | "STAY"; export interface ScoreItem
 - utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
+- verdict.ts: export function getVerdictLevel(diff: number): VerdictLevel; export function buildNegotiationPoints(items: ScoreItem[]): string[]; export function getVerdict(result: ScoreResult): ScoreResult
 
 ### Components (src/components/)
 - AdSlot.tsx: AdSlot
@@ -235,24 +228,28 @@ export interface ScoreResult {
 - MiniBar.tsx: MiniBar
 - OnboardingDialog.tsx: OnboardingDialog
 - PageShell.tsx: PageShell
+- ResultAnalysis.tsx: ResultAnalysis
+- SaveResultImage.tsx: SaveResultImage
 - ScreenScaffold.tsx: ScreenScaffold
 - Sparkline.tsx: Sparkline
 - StateView.tsx: EmptyState, LoadingState
 - SummaryHero.tsx: SummaryHero
 - TossPurchase.tsx: TossPurchase
 - TossRewardAd.tsx: TossRewardAd
+- WeightSlider.tsx: WeightSlider
 
 ### Module Dependencies (import graph)
+  lib/calc.ts → imports: lib/types, lib/constants
   lib/constants.ts → imports: lib/types, lib/types
-  pages/CompanyForm.tsx → imports: components/ScreenScaffold, components/StateView
-  pages/Compare.tsx → imports: components/ScreenScaffold, components/StateView
-  pages/Result.tsx → imports: components/ScreenScaffold, components/StateView
-  pages/Weights.tsx → imports: components/ScreenScaffold, components/StateView
+  lib/form.ts → imports: lib/types
+  lib/score.ts → imports: lib/types, lib/types, lib/constants, lib/calc
+  lib/storage.ts → imports: lib/constants, lib/types
+  lib/verdict.ts → imports: lib/types, lib/constants
+  pages/CompanyForm.tsx → imports: components/ScreenScaffold, components/BottomCTA, lib/constants, lib/form, lib/stora...
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
 - 0001: 도메인 타입 + RouteState 정의 (files: src/lib/types.ts)
-- 0018: 라우터 배선 + FloatingTabBar + 전역 Provider (files: src/App.tsx)
 - 0004: 금전 실질가치 계산 (calcMoney) (files: src/lib/calc.ts)
 - 0006: 판정 & 협상 포인트 (getVerdict) (files: src/lib/verdict.ts)
 - 0007: 앱 상태 훅 (useAppState) (files: src/hooks/useAppState.ts)
@@ -263,3 +260,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0015: 오퍼 비교 페이지 (S5) (files: src/pages/Compare.tsx)
 - 0016: 결과 이미지 저장 (F7) (files: src/components/SaveResultImage.tsx)
 - 0017: 온보딩 안내 + ErrorBoundary (files: src/components/OnboardingDialog.tsx, src/components/AppErrorBoundary.tsx)
+- 0018: 라우터 배선 + FloatingTabBar + 전역 Provider (files: src/App.tsx)
