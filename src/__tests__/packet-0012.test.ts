@@ -15,7 +15,8 @@ import "@testing-library/jest-dom/vitest";
 import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { mockTds, mockAppsInToss, mockRouter, mockNavigate } from "@/__tests__/__helpers__/mocks";
+import { mockTds, mockAppsInToss } from "@/__tests__/__helpers__/mocks";
+import { mockRouter, mockNavigate } from "@/__tests__/__helpers__/mocks-optional";
 import { STORAGE_KEY, MAX_OFFERS } from "@/lib/constants";
 import { DEFAULT_WEIGHTS } from "@/lib/types";
 import type { AppState, CompanyProfile } from "@/lib/types";
@@ -26,6 +27,7 @@ import { getVerdict } from "@/lib/verdict";
 mockTds();
 mockAppsInToss();
 mockRouter();
+console.log("DEBUG mockNavigate:", typeof mockNavigate, mockNavigate);
 
 import Home from "@/pages/Home";
 

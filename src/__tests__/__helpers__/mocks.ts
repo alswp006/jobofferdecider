@@ -2,14 +2,14 @@
  * Shared test mocks for Toss Mini App packets.
  *
  * Usage at the top of any test file:
- *   import { mockTds, mockAppsInToss, mockRouter } from "@/__tests__/__helpers__/mocks";
+ *   import { mockTds, mockAppsInToss } from "@/__tests__/__helpers__/mocks";
  *   mockTds();
  *   mockAppsInToss();
- *   mockRouter();
  *
- * Or use all at once:
- *   import { mockAll } from "@/__tests__/__helpers__/mocks";
- *   mockAll();
+ * If you also need react-router-dom or TossRewardAd mocked (e.g. to assert on
+ * navigate() calls), import mockRouter/mockTossRewardAd/mockAll from
+ * mocks-optional.ts instead of from here — see the comment above mockRouter()
+ * there for why they must live in a separate file.
  */
 
 import React from "react";
@@ -290,39 +290,5 @@ export function mockAppsInToss() {
   });
 }
 
-// ── Toss Reward Ad Component ──
-// TossRewardAd is a project-local component that wraps content behind ad viewing.
-// In tests, render the children directly (ad always "watched").
-export function mockTossRewardAd() {
-  vi.mock("@/components/TossRewardAd", () => ({
-    TossRewardAd: ({ children, onReward }: any) => {
-      // Auto-trigger onReward in tests to unlock content
-      if (onReward) setTimeout(onReward, 0);
-      return children;
-    },
-    default: ({ children }: any) => children,
-  }));
-}
-
-// ── react-router-dom ──
-// Preserve actual router + override useNavigate for assertion.
-export function mockRouter() {
-  vi.mock("react-router-dom", async () => {
-    const actual = await vi.importActual<typeof import("react-router-dom")>(
-      "react-router-dom",
-    );
-    return {
-      ...actual,
-      useNavigate: () => mockNavigate,
-      useLocation: () => mockLocation,
-    };
-  });
-}
-
-// ── Convenience: mock everything ──
-export function mockAll() {
-  mockTds();
-  mockAppsInToss();
-  mockTossRewardAd();
-  mockRouter();
-}
+// mockRouter()/mockTossRewardAd()/mockAll() live in ./mocks-optional — see that
+// file's top comment for why they can't be re-exported from here.
