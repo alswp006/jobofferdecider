@@ -14,6 +14,7 @@
     "test:visual": "playwright test",
     "test:visual:update": "playwright test --update-snapshots",
     "gate": "node scripts/finish-gate.mjs",
+    "scan:compliance": "node --experimental-strip-types scripts/scan-compliance.mjs src",
     "measure:tds": "node scripts/tds-density.mjs src"
   },
   "dependencies": {

@@ -198,6 +198,7 @@ export interface ScoreResult {
     TossRewardAd.tsx
   hooks/
   lib/
+    compliance.ts
     constants.ts
     contract.ts
     storage.ts
@@ -217,6 +218,7 @@ export interface ScoreResult {
   vite-env.d.ts
 
 ### Exports (src/lib/)
+- compliance.ts: export interface CompliancePattern; export interface ComplianceViolation; export const SCAN_EXCLUDE_PATHS = ['src/lib/compliance.ts', 'src/__tests__/'] as const; export const FORBIDDEN_PATTERNS: CompliancePattern[] = [; export function isScannableFile(relPath: string): boolean; export function scanSource(content: string, relPath: string): ComplianceViolation[]; export function formatViolation(violation: ComplianceViolation): string
 - constants.ts: export const TAX_TABLE = [; export const TIME_VALUE_PER_HOUR = 15_000; export const MAX_OFFERS = 3; export const STORAGE_KEY = "jod:state:v1"; export const ONBOARDED_KEY = "jod:onboarded:v1"; export const INITIAL_STATE: AppState =; export const SCORE_LABELS: Record< "money" | "growth" | "workLife" | "stability" | "culture" | "commuteEase", string > =; export const VERDICT_LABELS: Record<VerdictLevel, string> =
 - contract.ts: export type OfferInfo =; export type CompanyInfo =; export type Weights =; export type Verdict =; export type RouteState = 'S1' | 'S2' | 'S3' | 'S4' | 'S5' | 'S5-compare'; export type CalculationResult =; export type calcMoneyFn = (amount: number, opts?:; export type calcScoreFn = (offer: OfferInfo, weights: Weights) => CalculationResult
 - storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
