@@ -79,8 +79,6 @@ export default function CompanyForm() {
   const location = useLocation();
   const params = useParams<{ id?: string }>();
 
-  // eslint-disable-next-line no-console
-  console.log('DEBUG pathname:', JSON.stringify(location.pathname), 'params:', JSON.stringify(params));
   const isCurrent = location.pathname === '/company/current';
   const offerId = isCurrent ? undefined : params.id;
 
@@ -98,6 +96,7 @@ export default function CompanyForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
+  const [successToast, setSuccessToast] = useState({ open: false, text: '' });
 
   const offerExists = !isCurrent && Boolean(offerId) && existingProfile !== null;
 
@@ -153,6 +152,10 @@ export default function CompanyForm() {
       return;
     }
 
+    setSuccessToast({
+      open: true,
+      text: isCurrent ? '현재 직장 정보를 저장했어요' : '오퍼를 저장했어요',
+    });
     navigate('/');
   }
 
@@ -296,6 +299,13 @@ export default function CompanyForm() {
         position="bottom"
         text="저장 공간이 부족해요. 오퍼를 하나 삭제해주세요"
         onClose={() => setToastOpen(false)}
+      />
+
+      <Toast
+        open={successToast.open}
+        position="bottom"
+        text={successToast.text}
+        onClose={() => setSuccessToast((t) => ({ ...t, open: false }))}
       />
     </ScreenScaffold>
   );
