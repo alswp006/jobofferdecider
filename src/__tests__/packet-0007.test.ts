@@ -225,7 +225,7 @@ describe("Packet 0007: 앱 상태 훅 (useAppState)", () => {
     });
 
     it("should keep other offers when deleting one", async () => {
-      const offersToKeep = [
+      const offersToKeep: CompanyProfile[] = [
         {
           id: "o-1",
           name: "회사1",
@@ -454,7 +454,7 @@ describe("Packet 0007: 앱 상태 훅 (useAppState)", () => {
 
       // All IDs should be unique
       const ids = result.current.state.offers.map((o) => o.id);
-      expect(new Set(ids)).toHaveSize(ids.length);
+      expect(new Set(ids).size).toBe(ids.length);
     });
   });
 
