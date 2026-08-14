@@ -152,7 +152,10 @@ export function mockTds() {
       { Header: ({ children }: any) => React.createElement("div", null, children) },
     ),
 
-    Chip: ({ children, selected, onClick }: any) =>
+    // Chip is a group container (real API); ChipItem is the individual pressable pill.
+    Chip: ({ children }: any) => React.createElement("div", { role: "group" }, children),
+
+    ChipItem: ({ children, selected, onClick }: any) =>
       React.createElement(
         "button",
         { role: "button", "aria-pressed": selected, onClick },
