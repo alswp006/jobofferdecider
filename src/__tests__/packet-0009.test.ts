@@ -11,7 +11,6 @@ mockTds();
 mockAppsInToss();
 
 import { generateHapticFeedback } from "@apps-in-toss/web-framework";
-// @ts-expect-error — RED phase: src/components/WeightSlider.tsx does not exist yet (Coder creates it)
 import { WeightSlider } from "@/components/WeightSlider";
 
 function renderSlider(props: Partial<React.ComponentProps<typeof WeightSlider>> = {}) {
