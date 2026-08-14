@@ -262,3 +262,6 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0017: 온보딩 안내 + ErrorBoundary (files: src/components/OnboardingDialog.tsx, src/components/AppErrorBoundary.tsx)
 - 0018: 라우터 배선 + FloatingTabBar + 전역 Provider (files: src/App.tsx)
 - heal-1-02: 기반 lib 복구 — score.ts (normalizeWeights/calcScore) (files: src/lib/score.ts)
+- 0010: 회사 정보 입력 페이지 (S2) (files: src/pages/CompanyForm.tsx)
+- 0011: 중요도 설정 페이지 (S3) (files: src/pages/Weights.tsx)
+- 0012: 홈 페이지 (S1) (files: src/pages/Home.tsx)
