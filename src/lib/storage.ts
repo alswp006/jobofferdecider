@@ -44,7 +44,7 @@ export function migrate(raw: unknown): AppState {
  * localStorage에서 AppState 로드
  * - JSON 파싱 실패 → INITIAL_STATE (깊은 복사)
  * - version !== 1 → INITIAL_STATE (깊은 복사)
- * - 예외 던지지 않음 (catch블록에서 console.error 호출 금지)
+ * - 예외 던지지 않음 (catch블록에서 에러 로깅 금지)
  */
 export function loadState(): AppState {
   try {
