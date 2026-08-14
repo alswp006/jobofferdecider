@@ -123,11 +123,12 @@ export function mockTds() {
     ),
 
     Top: Object.assign(
-      ({ children, title }: any) =>
+      ({ children, title, right }: any) =>
         React.createElement(
           "nav",
           { role: "navigation" },
           title && React.createElement("h1", null, title),
+          right,
           children,
         ),
       {
@@ -139,6 +140,11 @@ export function mockTds() {
 
     BottomCTA: ({ children }: any) =>
       React.createElement("div", { "data-slot": "bottom-cta" }, children),
+
+    // FixedBottomCTA is itself a <button> (per .d.ts: HTMLButtonElement ref) — used by
+    // src/components/BottomCTA.tsx's SubmitFooter. Distinct export from BottomCTA above.
+    FixedBottomCTA: ({ children, onClick, disabled, ...props }: any) =>
+      React.createElement("button", { onClick, disabled, ...props }, children),
 
     BottomSheet: Object.assign(
       ({ children, open }: any) =>

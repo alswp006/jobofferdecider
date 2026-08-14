@@ -257,3 +257,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0006: 판정 & 협상 포인트 (getVerdict) (files: src/lib/verdict.ts)
 - 0007: 앱 상태 훅 (useAppState) (files: src/hooks/useAppState.ts)
 - 0008: 폼 유효성 검증 + 숫자 입력 유틸 (files: src/lib/form.ts)
+- 0009: WeightSlider 컴포넌트 (files: src/components/WeightSlider.tsx, src/components/WeightSlider.css)
