@@ -182,11 +182,13 @@ export interface ScoreResult {
   components/
     AdSlot.tsx
     Amount.tsx
+    AppErrorBoundary.tsx
     BottomCTA.tsx
     Card.tsx
     CountUp.tsx
     FloatingTabBar.tsx
     MiniBar.tsx
+    OnboardingDialog.tsx
     PageShell.tsx
     ScreenScaffold.tsx
     Sparkline.tsx
@@ -203,7 +205,11 @@ export interface ScoreResult {
     utils.ts
   main.tsx
   pages/
+    CompanyForm.tsx
+    Compare.tsx
     Home.tsx
+    Result.tsx
+    Weights.tsx
   styles/
     globals.css
     reward-ad.css
@@ -225,6 +231,7 @@ export interface ScoreResult {
 - CountUp.tsx: CountUp
 - FloatingTabBar.tsx: FloatingTabBar
 - MiniBar.tsx: MiniBar
+- OnboardingDialog.tsx: OnboardingDialog
 - PageShell.tsx: PageShell
 - ScreenScaffold.tsx: ScreenScaffold
 - Sparkline.tsx: Sparkline
@@ -235,7 +242,12 @@ export interface ScoreResult {
 
 ### Module Dependencies (import graph)
   lib/constants.ts → imports: lib/types, lib/types
+  pages/CompanyForm.tsx → imports: components/ScreenScaffold, components/StateView
+  pages/Compare.tsx → imports: components/ScreenScaffold, components/StateView
+  pages/Result.tsx → imports: components/ScreenScaffold, components/StateView
+  pages/Weights.tsx → imports: components/ScreenScaffold, components/StateView
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
 - 0001: 도메인 타입 + RouteState 정의 (files: src/lib/types.ts)
+- 0018: 라우터 배선 + FloatingTabBar + 전역 Provider (files: src/App.tsx)
