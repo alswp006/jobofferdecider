@@ -6,6 +6,7 @@ import { SummaryHero } from '@/components/SummaryHero';
 import { Amount } from '@/components/Amount';
 import { EmptyState } from '@/components/StateView';
 import { AdSlot } from '@/components/AdSlot';
+import { ResultAnalysis } from '@/components/ResultAnalysis';
 import { useAppState } from '@/hooks/useAppState';
 import { calcScore } from '@/lib/score';
 import { getVerdict } from '@/lib/verdict';
@@ -28,7 +29,7 @@ const VERDICT_BADGE_COLOR: Record<VerdictLevel, 'blue' | 'teal' | 'elephant' | '
 export default function Result() {
   const { offerId } = useParams<{ offerId: string }>();
   const navigate = useNavigate();
-  const { state } = useAppState();
+  const { state, unlockOffer } = useAppState();
 
   const offer = state.offers.find((o) => o.id === offerId) ?? null;
 
@@ -90,7 +91,12 @@ export default function Result() {
         </Paragraph.Text>
       </Card>
       <Spacing size={16} />
-      {/* 리워드 게이트 슬롯 — 0014가 협상 포인트 등을 채운다 */}
+      <ResultAnalysis
+        offerId={offer.id}
+        score={score}
+        unlocked={state.unlockedOfferIds.includes(offer.id)}
+        onUnlock={() => unlockOffer(offer.id)}
+      />
       <Spacing size={16} />
       <Paragraph.Text typography="st11" color="tertiary">
         세율은 구간별 근사치예요. 규칙 기반 계산 결과이며 재무·커리어 자문이 아니에요
