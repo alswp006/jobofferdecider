@@ -261,3 +261,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0013: 결과 화면 — 공개 영역 & SummaryHero (S4 전반부) (files: src/pages/Result.tsx)
 - 0014: 결과 화면 — 리워드 게이트 & 분석표 (S4 후반부) (files: src/components/ResultAnalysis.tsx, src/pages/Result.tsx)
 - 0015: 오퍼 비교 페이지 (S5) (files: src/pages/Compare.tsx)
+- 0016: 결과 이미지 저장 (F7) (files: src/components/SaveResultImage.tsx)
