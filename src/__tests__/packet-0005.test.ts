@@ -359,11 +359,11 @@ describe("점수 산출 (calcScore)", () => {
 
     // All scores should be 50 (money) or 60 (rating 3 * 20)
     // All weights equal (DEFAULT_WEIGHTS), so each weightRatio = 1/6
-    // currentTotal = (50 + 60 + 60 + 60 + 60 + 60) * (1/6) = 50
-    // offerTotal should also be 50 (identical profile)
+    // currentTotal = (50 + 60 + 60 + 60 + 60 + 60) / 6 = 58.33 → 58
+    // offerTotal should also be 58 (identical profile)
 
-    expect(result.currentTotal).toBeCloseTo(50, 0);
-    expect(result.offerTotal).toBeCloseTo(50, 0);
+    expect(result.currentTotal).toBeCloseTo(58, 0);
+    expect(result.offerTotal).toBeCloseTo(58, 0);
     expect(result.diff).toBe(0);
   });
 
