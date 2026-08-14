@@ -261,3 +261,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0016: 결과 이미지 저장 (F7) (files: src/components/SaveResultImage.tsx)
 - 0017: 온보딩 안내 + ErrorBoundary (files: src/components/OnboardingDialog.tsx, src/components/AppErrorBoundary.tsx)
 - 0018: 라우터 배선 + FloatingTabBar + 전역 Provider (files: src/App.tsx)
+- heal-1-02: 기반 lib 복구 — score.ts (normalizeWeights/calcScore) (files: src/lib/score.ts)

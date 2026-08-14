@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   AlertDialog,
@@ -14,7 +14,7 @@ import {
 import { ScreenScaffold } from '@/components/ScreenScaffold';
 import { SubmitFooter } from '@/components/BottomCTA';
 import { MAX_OFFERS, SCORE_LABELS } from '@/lib/constants';
-import { emptyDraft, parseWon, validateProfile } from '@/lib/form';
+import { emptyDraft, formatWon, parseWon, validateProfile } from '@/lib/form';
 import { loadState, saveState } from '@/lib/storage';
 import type { AppState, CompanyProfile, NonMonetaryRatings, ProfileDraft } from '@/lib/types';
 
@@ -51,14 +51,14 @@ const NUMERIC_FIELDS: { key: NumericFieldKey; label: string; placeholder: string
 function toDraft(profile: CompanyProfile): ProfileDraft {
   return {
     name: profile.name,
-    baseSalary: String(profile.baseSalary),
-    bonusPerYear: String(profile.bonusPerYear),
-    remoteDaysPerWeek: String(profile.remoteDaysPerWeek),
-    commuteMinutesOneWay: String(profile.commuteMinutesOneWay),
-    commuteCostPerDay: String(profile.commuteCostPerDay),
-    lunchCostPerDay: String(profile.lunchCostPerDay),
-    mealSupportPerMonth: String(profile.mealSupportPerMonth),
-    welfarePointsPerYear: String(profile.welfarePointsPerYear),
+    baseSalary: formatWon(profile.baseSalary),
+    bonusPerYear: formatWon(profile.bonusPerYear),
+    remoteDaysPerWeek: formatWon(profile.remoteDaysPerWeek),
+    commuteMinutesOneWay: formatWon(profile.commuteMinutesOneWay),
+    commuteCostPerDay: formatWon(profile.commuteCostPerDay),
+    lunchCostPerDay: formatWon(profile.lunchCostPerDay),
+    mealSupportPerMonth: formatWon(profile.mealSupportPerMonth),
+    welfarePointsPerYear: formatWon(profile.welfarePointsPerYear),
     ratings: profile.ratings,
   };
 }
@@ -97,11 +97,20 @@ export default function CompanyForm() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [successToast, setSuccessToast] = useState({ open: false, text: '' });
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const offerExists = !isCurrent && Boolean(offerId) && existingProfile !== null;
 
+  const canSave = draft.name.trim().length > 0 && parseWon(draft.baseSalary) > 0;
+
   function setField(key: keyof Omit<ProfileDraft, 'ratings'>, value: string) {
     setDraft((prev) => ({ ...prev, [key]: value }));
+  }
+
+  /** 콤마 등 비숫자를 즉시 제거하고 천 단위 콤마 포맷으로 되돌려 표시한다 (AC-5) */
+  function setNumericField(key: NumericFieldKey, raw: string) {
+    const digits = raw.replace(/[^0-9]/g, '');
+    setField(key, digits === '' ? '' : formatWon(parseWon(digits)));
   }
 
   function setRating(key: keyof NonMonetaryRatings, value: 1 | 2 | 3 | 4 | 5) {
@@ -111,7 +120,10 @@ export default function CompanyForm() {
   function handleSave() {
     const validationErrors = validateProfile(draft);
     setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0) return;
+    if (Object.keys(validationErrors).length > 0) {
+      if (validationErrors.name) nameInputRef.current?.focus();
+      return;
+    }
 
     const profile: CompanyProfile = {
       id: isCurrent ? 'current' : (offerId ?? generateOfferId()),
@@ -156,7 +168,7 @@ export default function CompanyForm() {
       open: true,
       text: isCurrent ? '현재 직장 정보를 저장했어요' : '오퍼를 저장했어요',
     });
-    navigate('/');
+    navigate('/', { replace: true });
   }
 
   function handleDeleteConfirm() {
@@ -186,105 +198,90 @@ export default function CompanyForm() {
           }
         />
       }
-      bottom={<SubmitFooter label="저장하기" onClick={handleSave} />}
+      bottom={<SubmitFooter label="저장하기" onClick={handleSave} disabled={!canSave} />}
     >
-      <TextField
-        variant="box"
-        label="회사명"
-        placeholder="예: 토스"
-        value={draft.name}
-        onChange={(e) => setField('name', e.target.value)}
-        help="1~20자로 적어주세요"
-        hasError={Boolean(errors.name)}
-      />
-      <Spacing size={12} />
+      <div data-testid="company-form">
+        <Paragraph.Text typography="t4">기본 정보</Paragraph.Text>
+        <Spacing size={12} />
 
-      {NUMERIC_FIELDS.slice(0, 2).map((field) => (
-        <div key={field.key}>
-          <TextField
-            variant="box"
-            label={field.label}
-            placeholder={field.placeholder}
-            inputMode="numeric"
-            type="text"
-            value={draft[field.key]}
-            onChange={(e) => setField(field.key, e.target.value)}
-            help={errors[field.key] ?? field.help}
-            hasError={Boolean(errors[field.key])}
-          />
-          <Spacing size={12} />
-        </div>
-      ))}
+        <TextField
+          ref={nameInputRef}
+          variant="box"
+          label="회사명"
+          placeholder="예: 토스"
+          value={draft.name}
+          onChange={(e) => setField('name', e.target.value)}
+          help={errors.name ?? '1~20자로 적어주세요'}
+          hasError={Boolean(errors.name)}
+        />
+        <Spacing size={12} />
 
-      <Spacing size={12} />
-      <Paragraph.Text typography="t4">근무·통근</Paragraph.Text>
-      <Spacing size={12} />
+        {NUMERIC_FIELDS.slice(0, 2).map((field) => (
+          <div key={field.key}>
+            <TextField
+              variant="box"
+              label={field.label}
+              placeholder={field.placeholder}
+              inputMode="numeric"
+              type="text"
+              value={draft[field.key]}
+              onChange={(e) => setNumericField(field.key, e.target.value)}
+              help={errors[field.key] ?? field.help}
+              hasError={Boolean(errors[field.key])}
+            />
+            <Spacing size={12} />
+          </div>
+        ))}
 
-      {NUMERIC_FIELDS.slice(2, 5).map((field) => (
-        <div key={field.key}>
-          <TextField
-            variant="box"
-            label={field.label}
-            placeholder={field.placeholder}
-            inputMode="numeric"
-            type="text"
-            value={draft[field.key]}
-            onChange={(e) => setField(field.key, e.target.value)}
-            help={errors[field.key] ?? field.help}
-            hasError={Boolean(errors[field.key])}
-          />
-          <Spacing size={12} />
-        </div>
-      ))}
+        <Spacing size={24} />
+        <Paragraph.Text typography="t4">근무 조건</Paragraph.Text>
+        <Spacing size={12} />
 
-      <Spacing size={12} />
-      <Paragraph.Text typography="t4">식대·복지</Paragraph.Text>
-      <Spacing size={12} />
+        {NUMERIC_FIELDS.slice(2, 8).map((field) => (
+          <div key={field.key}>
+            <TextField
+              variant="box"
+              label={field.label}
+              placeholder={field.placeholder}
+              inputMode="numeric"
+              type="text"
+              value={draft[field.key]}
+              onChange={(e) => setNumericField(field.key, e.target.value)}
+              help={errors[field.key] ?? field.help}
+              hasError={Boolean(errors[field.key])}
+            />
+            <Spacing size={12} />
+          </div>
+        ))}
 
-      {NUMERIC_FIELDS.slice(5, 8).map((field) => (
-        <div key={field.key}>
-          <TextField
-            variant="box"
-            label={field.label}
-            placeholder={field.placeholder}
-            inputMode="numeric"
-            type="text"
-            value={draft[field.key]}
-            onChange={(e) => setField(field.key, e.target.value)}
-            help={errors[field.key] ?? field.help}
-            hasError={Boolean(errors[field.key])}
-          />
-          <Spacing size={12} />
-        </div>
-      ))}
+        <Spacing size={24} />
+        <Paragraph.Text typography="t4">만족도</Paragraph.Text>
+        <Paragraph.Text typography="st11" color="secondary">
+          1점(낮음) ~ 5점(높음)
+        </Paragraph.Text>
+        <Spacing size={12} />
 
-      <Spacing size={12} />
-      <Paragraph.Text typography="t4">비금전 평가</Paragraph.Text>
-      <Paragraph.Text typography="st11" color="secondary">
-        1점(낮음) ~ 5점(높음)
-      </Paragraph.Text>
-      <Spacing size={12} />
+        {RATING_FIELDS.map((field) => (
+          <div key={field.key}>
+            <Paragraph.Text typography="t5">{field.label}</Paragraph.Text>
+            <Spacing size={8} />
+            <Chip size="small">
+              {([1, 2, 3, 4, 5] as const).map((value) => (
+                <ChipItem
+                  key={value}
+                  selected={draft.ratings[field.key] === value}
+                  onClick={() => setRating(field.key, value)}
+                >
+                  {value}
+                </ChipItem>
+              ))}
+            </Chip>
+            <Spacing size={16} />
+          </div>
+        ))}
 
-      {RATING_FIELDS.map((field) => (
-        <div key={field.key}>
-          <Paragraph.Text typography="t5">{field.label}</Paragraph.Text>
-          <Spacing size={8} />
-          <Chip size="small">
-            {([1, 2, 3, 4, 5] as const).map((value) => (
-              <ChipItem
-                key={value}
-                selected={draft.ratings[field.key] === value}
-                onClick={() => setRating(field.key, value)}
-              >
-                {value}
-              </ChipItem>
-            ))}
-          </Chip>
-          <Spacing size={16} />
-        </div>
-      ))}
-
-      <Spacing size={80} />
+        <Spacing size={80} />
+      </div>
 
       <AlertDialog
         open={deleteOpen}

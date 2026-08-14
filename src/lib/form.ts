@@ -52,7 +52,9 @@ const RANGES: Record<
 export function validateProfile(draft: ProfileDraft): Record<string, string> {
   const errors: Record<string, string> = {};
 
-  if (draft.name.length < 1 || draft.name.length > 20) {
+  if (draft.name.length < 1) {
+    errors.name = "회사명을 입력해주세요";
+  } else if (draft.name.length > 20) {
     errors.name = "1~20자로 적어주세요";
   }
 
